@@ -1,0 +1,90 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: flex-end;
+  margin-bottom: var(--sp-5);
+}
+.hkTitel {
+  margin: var(--sp-5) 0 var(--sp-2);
+  font-size: 1.05rem;
+}
+.hint {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  margin-bottom: var(--sp-4);
+}
+
+.lzRow {
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--border);
+}
+.lzTop {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.lzCode {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+  width: 46px;
+  padding-top: 2px;
+}
+.lzText {
+  font-size: 0.95rem;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  max-width: 520px;
+  margin-left: 58px;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  text-align: left;
+  cursor: default;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.achieved1 {
+  background: var(--stufe-1);
+  border-color: transparent;
+  color: #d9d4ec;
+}
+.achieved2 {
+  background: var(--stufe-2);
+  border-color: transparent;
+  color: #fff;
+}
+.achieved3 {
+  background: var(--stufe-3);
+  border-color: transparent;
+  color: #14121f;
+}
+.stepDate {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}

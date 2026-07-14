@@ -1,0 +1,58 @@
+# Supabase-Konfiguration (CLI-Layout). Dient lokal als Dev-Stack und als
+# versionskontrollierte Quelle für Migrationen/Seed. Produktiv wird dasselbe
+# Schema über das offizielle Self-Hosting-Docker-Setup angewandt (siehe README.md
+# in diesem Ordner). project_id nur als lokaler Container-Namensraum.
+project_id = "ausbildungsplan-informatik-efz"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+# Analytics (Logflare) wird nicht benötigt (techstack.md) und ist auf Windows ohne
+# zusätzliche Docker-Konfiguration nicht lauffähig -> aus.
+[analytics]
+enabled = false
+
+[auth]
+enabled = true
+# Frontend-URL (Vite dev). Produktiv: https://ict-apprentice.swisstph.ch
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+
+# E-Mail/Passwort-Provider: für den Break-Glass-Login (admin@swisstph.ch).
+# Der lokale CLI-Stack deaktiviert das E-Mail-Login komplett, wenn enable_signup=false
+# -> daher hier true. Ein Zufalls-Signup erhält mangels Allowlist-Eintrag keine Rolle
+# (RLS verweigert alles). Produktiv wird Public-Signup über GoTrue-Env gesperrt
+# (GOTRUE_DISABLE_SIGNUP=true); der Login läuft dort ausschliesslich über Entra ID.
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+# Microsoft Entra ID (Azure) SSO – primärer Login (siehe planung/authconcept.md).
+# Standardmässig AUS, weil die App-Registration + Secrets von Isaak im Entra-Tenant
+# erstellt werden müssen. Zum Aktivieren: enabled = true setzen und die drei
+# Env-Variablen bereitstellen (NICHT committen).
+[auth.external.azure]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+# Tenant-spezifische Issuer-URL, z.B. https://login.microsoftonline.com/<tenant-id>/v2.0
+url = "env(SUPABASE_AUTH_EXTERNAL_AZURE_URL)"

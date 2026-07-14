@@ -1,0 +1,51 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.kanton {
+  background: var(--kanton-bg);
+  color: var(--kanton-fg);
+  border-color: var(--kanton-ring);
+}
+.betrieblich {
+  background: var(--betrieb-bg);
+  color: var(--betrieb-fg);
+  border-color: var(--betrieb-ring);
+}
+.neutral {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-color: var(--border);
+}
+.accent {
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  border-color: var(--ring);
+}
+.warn {
+  background: var(--gelb-soft);
+  color: var(--gelb);
+  border-color: rgba(221, 226, 74, 0.35);
+}
+.erledigt {
+  background: var(--erledigt-bg);
+  color: var(--erledigt-fg);
+  border-color: var(--erledigt-rand);
+}

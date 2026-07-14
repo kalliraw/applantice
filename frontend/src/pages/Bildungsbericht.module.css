@@ -1,0 +1,231 @@
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.kopf {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.semester {
+  font-size: 1.05rem;
+  font-weight: 620;
+}
+.datum {
+  color: var(--text-3);
+  font-size: 0.82rem;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.feld {
+  margin-top: var(--sp-4);
+}
+.feldLabel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+.feldText {
+  font-size: 0.92rem;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.feldLeer {
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* Entwurf-Karte dezent hervorheben */
+.cardEntwurf {
+  border-style: dashed;
+}
+
+/* Karten-Körper: Texte links, Snapshot rechts */
+.koerper {
+  display: flex;
+  gap: var(--sp-5);
+  align-items: stretch;
+  margin-top: var(--sp-4);
+}
+.texte {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.texte .feld:first-child {
+  margin-top: 0;
+}
+.snapshot {
+  flex: 0 0 220px;
+  align-self: stretch;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.snapTitel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+.snapItem {
+  padding: var(--sp-2) 0;
+}
+.snapItem + .snapItem {
+  border-top: 1px solid var(--border);
+}
+.snapLabel {
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+.snapValRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-top: 2px;
+}
+.snapZahl {
+  font-size: 1.3rem;
+  font-weight: 680;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.snapTotal {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.snapNote {
+  color: var(--farbe-gelb);
+}
+.deltaUp,
+.deltaDown {
+  font-size: 0.72rem;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.deltaUp {
+  color: var(--erledigt-fg);
+}
+.deltaDown {
+  color: var(--fehler-fg);
+}
+.snapVgl {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--border);
+  font-size: 0.68rem;
+  color: var(--text-3);
+}
+.snapLeer {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .koerper {
+    flex-direction: column;
+  }
+  .snapshot {
+    flex-basis: auto;
+  }
+}
+
+/* Kennzahlen-Streifen (eingefrorener Stand) */
+.kennzahlen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+.kzItem {
+  flex: 1 1 auto;
+  min-width: 120px;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.kzWert {
+  font-size: 1.35rem;
+  font-weight: 680;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.kzTotal {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.kzNote {
+  color: var(--farbe-gelb);
+}
+.kzLabel {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+.cardFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.gesperrt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 0.8rem;
+}
+
+/* Modal */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.hint {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-2);
+  font-size: 0.85rem;
+}
+.kzBlock {
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.kzBlockTitel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.kzBlockNote {
+  margin-top: var(--sp-3);
+  font-size: 0.78rem;
+  color: var(--text-3);
+}

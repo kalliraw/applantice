@@ -1,0 +1,233 @@
+.werkzeuge {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+}
+.werkzeugeSuche {
+  flex: 1;
+  min-width: 240px;
+}
+.werkzeugeFilter {
+  min-width: 170px;
+}
+
+.legende {
+  margin-bottom: var(--sp-5);
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+}
+.legende summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 550;
+}
+.legendeGrid {
+  display: grid;
+  gap: 6px;
+  margin-top: var(--sp-3);
+  color: var(--text-2);
+}
+.legendeGrid b {
+  color: var(--accent-bright);
+  font-family: var(--font-mono);
+  margin-right: 4px;
+}
+
+.bereich {
+  margin-bottom: var(--sp-6);
+}
+.bereichHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.bereichCode {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+.bereichTitel {
+  font-size: 1.05rem;
+  font-weight: 620;
+}
+.bereichMeta {
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hk {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  margin-bottom: var(--sp-2);
+  overflow: hidden;
+}
+.hkErledigt {
+  border-color: var(--erledigt-rand);
+}
+.hkAngefangen {
+  border-color: var(--fehler-rand);
+}
+.hkHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+.hkHead:hover {
+  background: var(--surface-2);
+}
+.chev {
+  color: var(--text-3);
+  transition: transform var(--dur) var(--ease);
+  flex-shrink: 0;
+}
+.chevOpen {
+  transform: rotate(90deg);
+}
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent-bright);
+  flex-shrink: 0;
+}
+.hkTitel {
+  flex: 1;
+  min-width: 0;
+  font-weight: 520;
+}
+.hkRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+.hkBody {
+  padding: var(--sp-2) var(--sp-4) var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+.hkBeschr {
+  color: var(--text-2);
+  font-size: 0.88rem;
+  margin: var(--sp-3) 0;
+  white-space: pre-wrap;
+}
+.lz {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-top: 1px dashed var(--border);
+}
+.lzCode {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+  width: 46px;
+}
+.lzText {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+.lzMeta {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.modul {
+  font-size: 0.76rem;
+  color: var(--text-3);
+}
+.progressMini {
+  width: 90px;
+}
+.statusSelect {
+  min-width: 130px;
+}
+
+/* Leistungsziel-Editor (betrieblich, Berufsbildner) */
+.lzEditorTitel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin: var(--sp-2) 0;
+}
+.lzEditRow {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  padding: var(--sp-2) 0;
+  border-top: 1px dashed var(--border);
+}
+.lzEditText {
+  flex: 1;
+  min-height: 40px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  resize: vertical;
+}
+.lzTax {
+  height: 36px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  flex-shrink: 0;
+}
+.lzEditText:focus,
+.lzTax:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.lzDel {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-3);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.lzDel:hover {
+  background: rgba(190, 60, 70, 0.18);
+  color: #ffd0d0;
+}

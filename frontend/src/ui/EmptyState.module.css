@@ -1,0 +1,21 @@
+.empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  color: var(--text-2);
+}
+.title {
+  font-weight: 600;
+  color: var(--text);
+}
+.text {
+  margin-top: var(--sp-2);
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.action {
+  margin-top: var(--sp-4);
+  display: flex;
+  justify-content: center;
+}

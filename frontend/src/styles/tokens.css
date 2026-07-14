@@ -1,0 +1,104 @@
+/*
+ * Design-Tokens – Swiss TPH Corporate Design, überarbeitet.
+ * Quelle der Markenfarben: planung/design.md (--farbe-* NICHT verändern).
+ * Semantische Tokens (Flächen, Text, Accent, Spacing, Radius, Schatten) sind hier
+ * definiert – von design.md ausdrücklich Claude Code überlassen, klar getrennt.
+ *
+ * Dark Mode ist der Grundmodus. Abstufung über Indigo-Sättigung, kein Rot/Grün.
+ */
+
+:root {
+  /* ================= Markenfarben (design.md, unverändert) ================= */
+  --farbe-indigo: #432ca1;
+  --farbe-indigo-60: #8e80c6;
+  --farbe-indigo-40: #b3aad9;
+  --farbe-indigo-20: #d9d4ec;
+  --farbe-weiss: #ffffff;
+  --farbe-schwarz: #000000;
+  --farbe-gelb: #dde24a;
+  --farbe-gelb-60: #eaed93;
+
+  /* ================= Flächen (dunkel, leicht indigo-getönt) ================= */
+  --bg: #0a0912;
+  --bg-glow-1: rgba(67, 44, 161, 0.22); /* Indigo-Schimmer oben links */
+  --bg-glow-2: rgba(67, 44, 161, 0.10);
+  --surface: #141221;         /* Panels / Cards */
+  --surface-2: #1c1930;       /* verschachtelt / Inputs */
+  --surface-3: #262038;       /* Hover */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* ================= Text ================= */
+  --text: #edecf4;
+  --text-2: #a7a1c0;          /* sekundär */
+  --text-3: #6f698a;          /* gedämpft / captions */
+  --text-on-accent: #ffffff;
+
+  /* ================= Accent (Indigo) ================= */
+  --accent: #8e80c6;          /* Highlights, aktive Icons auf Dunkel */
+  --accent-bright: #9d8dff;   /* helle Interaktion */
+  --accent-solid-1: #5a45c8;  /* Button-Verlauf hell */
+  --accent-solid-2: #43309f;  /* Button-Verlauf dunkel (brand) */
+  --ring: rgba(142, 128, 198, 0.45);
+  --accent-soft: rgba(120, 100, 220, 0.14); /* zarte gefüllte Flächen */
+
+  /* ================= Status / Akzente ================= */
+  --gelb: var(--farbe-gelb);
+  --gelb-soft: rgba(221, 226, 74, 0.16);
+
+  /* Unvollständig/Warnung – Corporate-Gelb (einzige Akzentfarbe, design.md).
+     z.B. Module mit Gewichtssumme ≠ 100%. Sparsam als Akzent. */
+  --fehler-bg: rgba(221, 226, 74, 0.13);
+  --fehler-rand: rgba(221, 226, 74, 0.5);
+  --fehler-fg: var(--farbe-gelb);
+
+  /* Erledigt – Grün (bewusste Ausnahme von der Nur-Indigo/Gelb-Regel, auf Wunsch:
+     klares „erledigt"-Signal). */
+  --erledigt-bg: rgba(56, 178, 115, 0.16);
+  --erledigt-rand: rgba(72, 196, 132, 0.5);
+  --erledigt-fg: #74e0a6;
+
+  /* 3-Stufen-Raster Selbsteinschätzung (Indigo-Sättigung, kein Ampel) */
+  --stufe-1: #3a3357;         /* Erklärt */
+  --stufe-2: #6151b3;         /* Geübt */
+  --stufe-3: #9d8dff;         /* Selbstständig */
+
+  /* Kompetenz-Herkunft */
+  --kanton-bg: rgba(90, 69, 200, 0.22);
+  --kanton-fg: var(--farbe-indigo-20);
+  --kanton-ring: rgba(120, 100, 220, 0.4);
+  --betrieb-bg: rgba(255, 255, 255, 0.06);
+  --betrieb-fg: #c9c4dd;
+  --betrieb-ring: rgba(255, 255, 255, 0.14);
+
+  /* ================= Typografie ================= */
+  --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ================= Spacing (4er-Skala) ================= */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ================= Radien ================= */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  /* ================= Schatten / Tiefe ================= */
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-md: 0 6px 20px -6px rgba(0, 0, 0, 0.5);
+  --sh-lg: 0 18px 50px -12px rgba(0, 0, 0, 0.6);
+  --sh-glow: 0 10px 34px -10px rgba(67, 44, 161, 0.5);
+
+  /* ================= Bewegung ================= */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 150ms;
+}

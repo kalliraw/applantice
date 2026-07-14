@@ -1,0 +1,497 @@
+.tabs {
+  margin-bottom: var(--sp-5);
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--sp-5);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.table th {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.table td {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.fachName {
+  font-weight: 520;
+}
+.komp {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.noteInput {
+  width: 78px;
+  height: 36px;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  text-align: center;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+}
+.noteInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.noteInput:disabled {
+  opacity: 0.6;
+}
+
+/* Ergebnis */
+.summary {
+  position: sticky;
+  top: var(--sp-5);
+}
+.total {
+  text-align: center;
+  padding: var(--sp-4) 0 var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--sp-4);
+}
+.totalLabel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.totalValue {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: var(--sp-2);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--farbe-indigo-20), var(--accent-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.totalValueEmpty {
+  color: var(--text-3);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.compRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.compRowSub {
+  padding-left: var(--sp-4);
+}
+.compName {
+  font-size: 0.9rem;
+}
+.compSubName {
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+.compMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.compGewicht {
+  font-size: 0.76rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.compWert {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-width: 34px;
+  text-align: right;
+}
+.hintBM {
+  color: var(--gelb);
+  font-size: 0.82rem;
+}
+
+/* ---- Schwebende Ergebnis-Leiste (unten): distinktes Indigo-Score-Panel ---- */
+.resultBar {
+  position: fixed;
+  bottom: var(--sp-5);
+  /* zentriert im Bereich rechts der Sidebar (264px), nur so breit wie der Inhalt */
+  left: calc(50% + 132px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 264px - 2 * var(--sp-7));
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  border: 1px solid rgba(142, 128, 198, 0.3);
+  background: linear-gradient(180deg, #1d1934, #141021);
+  box-shadow:
+    0 20px 55px -14px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(142, 128, 198, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+/* Hero-Block: Gesamtnote, unverwechselbar in Indigo. */
+.gesamt {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px var(--sp-5) 2px var(--sp-3);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.gesamtLabel {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 700;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.gesamtWert {
+  font-size: 2.7rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--farbe-gelb);
+}
+.gesamtWertLeer {
+  color: var(--text-3);
+}
+/* Teilnoten: kompakte Stat-Pillen, umbrechend (kein Innen-Scrollen). */
+.teilnoten {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: var(--sp-2);
+  padding-right: var(--sp-3);
+}
+.teil {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px var(--sp-4);
+  border-left: 1px solid var(--border);
+  white-space: nowrap;
+}
+.teil:first-child {
+  border-left: none;
+}
+.teilName {
+  font-size: 0.7rem;
+  font-weight: 550;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.teilLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.teilWert {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.teilGewicht {
+  font-size: 0.66rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.teilBM {
+  color: var(--gelb);
+  font-size: 0.76rem;
+  align-self: center;
+}
+/* Platz, damit die letzten Module nicht hinter der Leiste verschwinden. */
+.listeSpacer {
+  height: 150px;
+}
+@media (max-width: 820px) {
+  .resultBar {
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 2 * var(--sp-4));
+    bottom: var(--sp-4);
+  }
+}
+
+/* ---- Fächer-Liste (klickbar) ---- */
+.fachList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.kompGruppe {
+  margin-top: var(--sp-4);
+}
+.kompGruppeTitel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+.fachRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.fachRow:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.fachRowDisabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fachRowDisabled:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+/* Unvollständig: Gewichtssumme der LBs ≠ 100% -> rot markiert (begonnen). */
+.fachRowFehler {
+  background: var(--fehler-bg);
+  border-color: var(--fehler-rand);
+}
+.fachRowFehler:hover {
+  background: var(--fehler-bg);
+  border-color: var(--fehler-rand);
+}
+.sumBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--fehler-fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Suche */
+.suche {
+  position: relative;
+  margin-bottom: var(--sp-4);
+}
+.sucheInput {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 40px;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+}
+.sucheInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.sucheIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+.modulChip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  padding: 3px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 74px;
+  text-align: center;
+}
+.modulChipLeer {
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+.fachMain {
+  flex: 1;
+  min-width: 0;
+}
+.fachNameRow {
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fachKomp {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.fachRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
+}
+.gradeBig {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: right;
+}
+.gradeEmpty {
+  color: var(--text-3);
+  font-weight: 500;
+}
+.lbCount {
+  font-size: 0.74rem;
+  color: var(--text-3);
+  min-width: 44px;
+  text-align: right;
+}
+.chevR {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+/* ---- LB-Detail (im Modal) ---- */
+.lbHeadChip {
+  margin-bottom: var(--sp-2);
+}
+.lbTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.lbTable th {
+  text-align: left;
+  padding: var(--sp-2);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+}
+.lbTable td {
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.lbTitel {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+}
+.lbTitel:focus,
+.lbSmall:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.lbSmall {
+  width: 68px;
+  height: 34px;
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+}
+.lbDel {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+}
+.lbDel:hover {
+  background: rgba(190, 60, 70, 0.18);
+  color: #ffd0d0;
+}
+.lbFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.lbModulnote {
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.lbModulnote b {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-left: var(--sp-2);
+}
+.lbSumme {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.lbSummeFehler {
+  color: var(--fehler-fg);
+  font-weight: 600;
+}
+.lbWarn {
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--fehler-bg);
+  border: 1px solid var(--fehler-rand);
+  color: var(--fehler-fg);
+  font-size: 0.82rem;
+}
+.dispBadge {
+  margin-left: auto;
+}

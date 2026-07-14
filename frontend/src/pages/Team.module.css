@@ -1,0 +1,499 @@
+/* ===================== Teams-Leiste (alle Teams) ===================== */
+.teamsLeiste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+.teamChip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 10px 6px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--tc, var(--accent));
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.teamChip:disabled {
+  cursor: default;
+}
+.teamChip:not(:disabled):hover {
+  background: var(--surface-2);
+}
+.teamChipDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tc, var(--accent));
+  flex-shrink: 0;
+}
+.teamChipName {
+  font-weight: 560;
+  font-size: 0.9rem;
+}
+.teamChipMeta {
+  color: var(--text-3);
+  font-size: 0.78rem;
+}
+.teamChipZiele {
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  font-size: 0.74rem;
+  font-weight: 560;
+}
+.teamChipZiele:hover {
+  background: var(--surface-3);
+}
+.aktivRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  font-size: 0.9rem;
+  color: var(--text-2);
+}
+.aktivRow input {
+  accent-color: var(--accent-solid-1);
+}
+
+/* ===================== Zeitstrahl ===================== */
+.strahlWrap {
+  overflow-x: auto;
+  padding-bottom: var(--sp-3);
+}
+.strahlHeader,
+.strahl {
+  min-width: 720px;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) minmax(0, 1fr) 172px;
+  column-gap: var(--sp-3);
+}
+.strahlHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: var(--sp-2) 0;
+  margin-bottom: var(--sp-2);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-strong);
+}
+.spHeadAchse,
+.spHead {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  font-weight: 600;
+}
+.spHead {
+  padding-left: var(--sp-2);
+}
+
+.strahl {
+  position: relative;
+  grid-template-rows: 100%;
+}
+
+/* Hintergrund-Bänder pro Semester (volle Breite) */
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border-strong);
+}
+.bandAlt {
+  background: transparent;
+}
+.kwLinie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 0;
+  border-top: 1px dashed var(--border);
+}
+
+/* Achse */
+.spalteAchse {
+  position: relative;
+  z-index: 1;
+}
+.achseSem {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: var(--sp-2) var(--sp-2) 0 0;
+}
+.achseSemNr {
+  font-weight: 640;
+  font-size: 0.85rem;
+}
+.achseSemSub {
+  font-size: 0.74rem;
+  color: var(--accent-bright);
+}
+.achseSemDat {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.kwLabel {
+  position: absolute;
+  right: 4px;
+  transform: translateY(-50%);
+  font-size: 0.64rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  background: var(--bg);
+  padding: 0 2px;
+}
+
+/* Schule: Module pro Semester */
+.spalteSchule {
+  position: relative;
+  z-index: 1;
+}
+.schuleBlock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: var(--sp-2);
+  overflow: hidden;
+}
+.schuleLeer {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-style: italic;
+}
+.modChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-content: flex-start;
+  height: 100%;
+  overflow: hidden;
+}
+.modChip {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  padding: 3px 7px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--kanton-ring);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modChip b {
+  font-family: var(--font-mono);
+  color: var(--accent-bright);
+}
+
+/* Betrieb: Team-Zuteilungen */
+.spalteBetrieb {
+  position: relative;
+  z-index: 1;
+}
+.betriebLeer {
+  position: absolute;
+  top: var(--sp-3);
+  left: var(--sp-2);
+  right: var(--sp-2);
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.teamBar {
+  position: absolute;
+  left: var(--sp-2);
+  right: var(--sp-2);
+  padding: 6px 10px;
+  border: 1px solid var(--tc);
+  border-left: 4px solid var(--tc);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--tc) 20%, var(--surface));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+.teamBar:hover {
+  background: color-mix(in srgb, var(--tc) 32%, var(--surface));
+}
+.teamBarDrag {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.teamBarAktiv {
+  cursor: grabbing;
+  z-index: 6;
+  box-shadow: var(--sh-md);
+  background: color-mix(in srgb, var(--tc) 38%, var(--surface));
+}
+.griffTop,
+.griffBottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 9px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.griffTop {
+  top: 0;
+  border-top-left-radius: var(--r-sm);
+  border-top-right-radius: var(--r-sm);
+}
+.griffBottom {
+  bottom: 0;
+  border-bottom-left-radius: var(--r-sm);
+  border-bottom-right-radius: var(--r-sm);
+}
+.teamBarDrag:hover .griffTop,
+.teamBarDrag:hover .griffBottom {
+  background: color-mix(in srgb, var(--tc) 70%, transparent);
+}
+.teamBarName {
+  font-weight: 620;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.teamBarMeta {
+  font-size: 0.72rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.teamBarPerson {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Berichte: Flags */
+.spalteBerichte {
+  position: relative;
+  z-index: 2;
+}
+.flag {
+  position: absolute;
+  left: 0;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.74rem;
+  cursor: pointer;
+  text-align: left;
+}
+.flag:hover {
+  background: var(--surface-3);
+}
+.flagSem {
+  border-left: 3px solid var(--accent);
+}
+.flagSonder {
+  border-left: 3px solid var(--farbe-gelb);
+}
+.flagIcon {
+  flex-shrink: 0;
+  color: var(--text-2);
+}
+.flagText {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flagDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--text-3);
+  flex-shrink: 0;
+}
+.flagDotDone {
+  background: var(--erledigt-fg);
+  border-color: var(--erledigt-fg);
+}
+
+/* Jetzt-Marker */
+.nowLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 15;
+  border-top: 2px solid var(--accent-bright);
+}
+.nowLabel {
+  position: absolute;
+  left: 0;
+  top: -9px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent-bright);
+  color: #17122b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ===================== Ziele-Modal ===================== */
+.zieleListe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-height: 52vh;
+  overflow-y: auto;
+  margin-top: var(--sp-3);
+  padding-right: var(--sp-2);
+}
+.zieleGruppe {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.zieleHk {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-weight: 560;
+  font-size: 0.86rem;
+}
+.zieleHkCode {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--accent-bright);
+}
+.zieleLz {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  padding: 6px 10px 6px 28px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  border-top: 1px dashed var(--border);
+}
+.zieleLz:hover,
+.zieleHk:hover {
+  background: var(--surface-3);
+}
+.zieleLzCode {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-3);
+  margin-right: 4px;
+}
+.zieleHk input,
+.zieleLz input {
+  margin-top: 3px;
+  accent-color: var(--accent-solid-1);
+  flex-shrink: 0;
+}
+
+/* ===================== Modul-Plan-Modal ===================== */
+.modPlanListe {
+  display: flex;
+  flex-direction: column;
+  max-height: 52vh;
+  overflow-y: auto;
+  margin-top: var(--sp-3);
+}
+.modPlanRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 8px 4px;
+  border-top: 1px solid var(--border);
+}
+.modPlanNr {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--accent-bright);
+  width: 44px;
+  flex-shrink: 0;
+}
+.modPlanName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+}
+.modPlanSel {
+  flex-shrink: 0;
+  height: 34px;
+  padding: 0 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+/* ===================== Zuteilungs-Detail ===================== */
+.detailMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: 0.9rem;
+  margin-bottom: var(--sp-4);
+}
+.detailLabel {
+  display: inline-block;
+  min-width: 108px;
+  color: var(--text-3);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.detailZieleTitel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  margin-bottom: var(--sp-2);
+}
+.detailZiele {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-height: 44vh;
+  overflow-y: auto;
+}
+.detailHkTitel {
+  font-weight: 560;
+  font-size: 0.86rem;
+  margin-bottom: 4px;
+}
+.detailLz {
+  font-size: 0.84rem;
+  color: var(--text-2);
+  padding: 3px 0 3px 12px;
+  border-left: 2px solid var(--border);
+}

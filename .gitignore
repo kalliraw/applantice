@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build-Output
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# Env / Secrets – NIE committen (siehe authconcept.md)
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Supabase CLI (lokaler Stack, temporäre Artefakte)
+supabase/.temp/
+supabase/.branches/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Generierte Artefakte, die reproduzierbar aus data/*.csv entstehen,
+# werden bewusst NICHT ignoriert (supabase/seed.sql ist eingecheckt,
+# damit der Seed ohne Node-Lauf nachvollziehbar bleibt).
