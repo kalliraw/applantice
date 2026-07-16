@@ -1,0 +1,155 @@
+# =====================================================================
+# Ausbildungsplan Informatik EFZ – vollständige Containerisierung
+#
+#   docker compose up -d --build      # alles hochfahren (App: http://localhost:${APP_PORT:-8080})
+#   docker compose down               # stoppen (Daten bleiben im Volume)
+#   docker compose down -v            # stoppen + Datenbank-Volume löschen (frischer Seed)
+#
+# Es wird KEIN Quellcode verändert – alle bestehenden Dateien (frontend/, supabase/)
+# werden nur eingelesen/eingebunden. Der Backend-Stack (Postgres + GoTrue-Auth +
+# PostgREST) deckt exakt die vom Frontend genutzte Supabase-Oberfläche ab
+# (auth: signInWithPassword/OAuth/session, rest: .from(), rpc: .rpc()).
+#
+# nginx liefert die gebaute SPA UND proxyt /auth/v1 + /rest/v1 auf denselben
+# Origin -> VITE_SUPABASE_URL ist schlicht die App-URL selbst (kein CORS).
+#
+# Versionen und Secrets sind über Umgebungsvariablen (bzw. eine optionale .env,
+# siehe .env.example) überschreibbar. Die Defaults sind die offiziellen
+# Supabase-Self-Hosting-Demo-Keys – VOR PRODUKTIVBETRIEB ersetzen.
+# =====================================================================
+
+name: ausbildungsplan-informatik-efz
+
+x-postgres-password: &pg_password ${POSTGRES_PASSWORD:-postgres-super-secret-and-long-passwort}
+
+services:
+  # ---------- Datenbank (Postgres mit Supabase-Rollen & auth-Helfern) ----------
+  db:
+    image: supabase/postgres:${POSTGRES_VERSION:-15.8.1.060}
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: *pg_password
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      # Von den Init-Skripten (docker/db/init) verwendet, um die Login-Passwörter
+      # der Service-Rollen zu setzen, mit denen sich GoTrue/PostgREST verbinden.
+      AUTHENTICATOR_PASSWORD: ${AUTHENTICATOR_PASSWORD:-authenticator-secret-passwort}
+      AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:-auth-admin-secret-passwort}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supabase_admin -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ---------- GoTrue (Auth): E-Mail/Passwort Break-Glass + optional Entra ID ----------
+  auth:
+    image: supabase/gotrue:${GOTRUE_VERSION:-v2.170.0}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: ${PUBLIC_URL:-http://localhost:8080}
+
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${AUTH_ADMIN_PASSWORD:-auth-admin-secret-passwort}@db:5432/${POSTGRES_DB:-postgres}
+
+      GOTRUE_SITE_URL: ${PUBLIC_URL:-http://localhost:8080}
+      GOTRUE_URI_ALLOW_LIST: ${PUBLIC_URL:-http://localhost:8080}
+      # Public-Signup wie im lokalen CLI-Stack aktiv (Break-Glass-Login funktioniert;
+      # ein Zufalls-Signup erhält mangels Allowlist keine Rolle -> RLS verweigert alles).
+      GOTRUE_DISABLE_SIGNUP: ${GOTRUE_DISABLE_SIGNUP:-false}
+
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+
+      # E-Mail/Passwort (Break-Glass admin@swisstph.ch). Keine Bestätigungsmail
+      # (config.toml: enable_confirmations=false) -> Autoconfirm an.
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+
+      # Microsoft Entra ID (Azure) – standardmässig AUS (authconcept.md). Zum
+      # Aktivieren die vier Variablen in .env setzen (Secrets NIE committen).
+      GOTRUE_EXTERNAL_AZURE_ENABLED: ${GOTRUE_EXTERNAL_AZURE_ENABLED:-false}
+      GOTRUE_EXTERNAL_AZURE_CLIENT_ID: ${SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID:-}
+      GOTRUE_EXTERNAL_AZURE_SECRET: ${SUPABASE_AUTH_EXTERNAL_AZURE_SECRET:-}
+      GOTRUE_EXTERNAL_AZURE_URL: ${SUPABASE_AUTH_EXTERNAL_AZURE_URL:-}
+      GOTRUE_EXTERNAL_AZURE_REDIRECT_URI: ${PUBLIC_URL:-http://localhost:8080}/auth/v1/callback
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # ---------- Migrator: wendet supabase/migrations/* + seed.sql an (einmalig) ----------
+  migrator:
+    image: supabase/postgres:${POSTGRES_VERSION:-15.8.1.060}
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        # GoTrue legt beim Start das auth-Schema + auth.users an; die Migrationen
+        # (FK auf auth.users) und der Seed (Break-Glass-User) brauchen das.
+        condition: service_healthy
+    environment:
+      # Superuser des supabase/postgres-Images ist 'supabase_admin' (kein 'postgres').
+      # Als Superuser ist der Migrator Owner der Tabellen und umgeht RLS.
+      PGPASSWORD: *pg_password
+      PGHOST: db
+      PGUSER: supabase_admin
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+    entrypoint: ["/bin/bash", "/apply.sh"]
+    volumes:
+      - ./docker/migrator/apply.sh:/apply.sh:ro
+      - ./supabase/migrations:/migrations:ro
+      - ./supabase/seed.sql:/seed.sql:ro
+
+  # ---------- PostgREST (REST + RPC) ----------
+  rest:
+    image: postgrest/postgrest:${POSTGREST_VERSION:-v12.2.12}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD:-authenticator-secret-passwort}@db:5432/${POSTGRES_DB:-postgres}
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+
+  # ---------- Frontend (gebaute SPA + Reverse-Proxy für /auth/v1 & /rest/v1) ----------
+  web:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-20}
+        NGINX_VERSION: ${NGINX_VERSION:-1.27}
+        # Vite bäckt diese Werte zur Build-Zeit ein. Gleicher Origin wie die App.
+        VITE_SUPABASE_URL: ${PUBLIC_URL:-http://localhost:8080}
+        VITE_SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+    restart: unless-stopped
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./docker/frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  db-data:
