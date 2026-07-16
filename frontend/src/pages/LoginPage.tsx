@@ -6,7 +6,7 @@ import { Button, Card, TextField } from '../ui/index.ts'
 import styles from './LoginPage.module.css'
 
 export function LoginPage() {
-  const { session, signInPassword } = useAuth()
+  const { session, signInPassword, signInEntra } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [passwort, setPasswort] = useState('')
@@ -54,14 +54,13 @@ export function LoginPage() {
         <Button
           variant="secondary"
           block
-          disabled
-          title="Wird aktiv, sobald die Entra-App-Registrierung im Tenant steht (authconcept.md)"
+          onClick={() => signInEntra()}
+          title="Anmeldung über Microsoft Entra ID (Swiss TPH SSO)"
         >
           Mit Microsoft Entra ID anmelden
         </Button>
         <p className={styles.note}>
-          Single Sign-on wird aktiviert, sobald die Entra-App-Registrierung steht. Bis
-          dahin: Break-Glass-Login.
+          Single Sign-on über Swiss TPH. Alternativ: Break-Glass-Login.
         </p>
 
         <div className={styles.divider}>
