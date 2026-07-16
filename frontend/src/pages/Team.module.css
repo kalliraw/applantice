@@ -372,6 +372,7 @@
   padding-right: var(--sp-2);
 }
 .zieleGruppe {
+  flex: 0 0 auto; /* nicht schrumpfen – sonst stauchen sich die Gruppen in der max-height */
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   overflow: hidden;

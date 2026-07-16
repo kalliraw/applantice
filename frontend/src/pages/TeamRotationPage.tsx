@@ -123,9 +123,9 @@ export function TeamRotationPage() {
         actions={
           <>
             <LernendeAuswahl />
+            <Button variant="secondary" onClick={() => setModulModal(true)}>Module planen</Button>
             {istBB && (
               <>
-                <Button variant="secondary" onClick={() => setModulModal(true)}>Module planen</Button>
                 <Button variant="secondary" onClick={() => setTeamModal({ team: null })}>+ Team</Button>
                 {aktivId && <Button variant="primary" onClick={() => setZModal({ zuteilung: null })}>+ Zuteilung</Button>}
               </>
@@ -212,7 +212,7 @@ export function TeamRotationPage() {
           onGespeichert={() => { setZModal(null); void ladeLernendenDaten() }}
         />
       )}
-      {istBB && modulModal && (
+      {modulModal && (
         <ModulPlanModal
           module={module}
           onClose={() => setModulModal(false)}
@@ -665,7 +665,9 @@ function ModulPlanModal({
 
   async function setSem(id: string, sem: number | null) {
     setLokal((c) => ({ ...c, [id]: sem }))
-    await supabase.from('fach').update({ semester: sem }).eq('id', id)
+    // Über RPC, damit auch Lernende NUR die Semester-Spalte pflegen können
+    // (SECURITY DEFINER, kapselt die Spalten-Einschränkung – siehe Migration 0008).
+    await supabase.rpc('modul_semester_setzen', { p_fach_id: id, p_semester: sem })
   }
 
   return (

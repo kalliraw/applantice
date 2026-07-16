@@ -38,8 +38,10 @@ Zwei Rollen. Kein separates Admin-Konzept – der Break-Glass-Login (siehe
   `authconcept.md`), legen pro Team eine **verantwortliche Person** fest, weisen pro Team
   die dort zu erreichenden **Leistungsziele** zu (pro Leistungsziel) und planen, in
   welchem **Semester** welches **Modul** in der Schule unterrichtet wird (global für alle
-  Lernenden). Lernende sehen ihren Zeitstrahl (Rotation, Module, verlinkte Berichte),
-  können aber nichts bearbeiten.
+  Lernenden). Lernende sehen ihren eigenen Zeitstrahl (Rotation, Module, verlinkte
+  Berichte) und dürfen die **Modul→Semester-Planung mitpflegen** (globaler Schulplan, nur
+  die Semester-Zuordnung – abgesichert über eine SECURITY-DEFINER-Funktion), können aber
+  **Team-Zuteilungen nicht bearbeiten**.
 - Der Erledigt-Status einer Handlungskompetenz wird **automatisch aus der
   Selbsteinschätzung der Lernenden abgeleitet** (erledigt = alle zugehörigen
   Leistungsziele auf Stufe "selbstständig") und **nicht mehr manuell** vom Berufsbildner
