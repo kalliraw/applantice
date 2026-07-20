@@ -18,7 +18,15 @@ Auth (Authentication > Providers > Azure im Supabase Studio).
 4. **Certificates & secrets > New client secret.** Ablauf: 12 Monate empfohlen +
    Kalender-Reminder zur Rotation. Wert sofort kopieren (nur einmal sichtbar).
 5. **API permissions > Microsoft Graph > Delegated**: `openid`, `email`, `profile`,
-   `offline_access`, `User.Read`. Danach "Grant admin consent" klicken.
+   `offline_access`, `User.Read` sowie für den Benutzer-Sync (siehe unten)
+   `GroupMember.Read.All` **und** `User.ReadBasic.All`. Danach "Grant admin consent"
+   klicken. Wichtig:
+   - Ohne Admin-Consent würden diese Directory-Permissions beim Login pro Benutzer eine
+     Zustimmung verlangen bzw. den Login für Lernende blockieren.
+   - `GroupMember.Read.All` liefert nur die **Mitgliedschaft**; die **Profilfelder**
+     (Name/E-Mail/UPN) anderer Benutzer sind erst mit `User.ReadBasic.All` lesbar. Fehlt
+     dieser Scope, kommen die Mitglieder mit leeren Werten zurück, sobald der Tenant
+     "Benutzer dürfen andere Benutzer lesen" einschränkt (bei Swiss TPH der Fall).
 6. **Empfohlen: Zugriff einschränken.** Enterprise Applications > diese App >
    Properties > "Assignment required?" = Yes, dann unter "Users and groups" die
    2 Lernenden + Berufsbildner (+ künftige Lernende) eintragen.
@@ -32,32 +40,57 @@ Auth (Authentication > Providers > Azure im Supabase Studio).
   versehentlich eingecheckt werden könnten).
 - Ablaufdatum im Kalender eintragen, rechtzeitig rotieren.
 
-## Team-Sync aus Entra ID
+## Benutzer-Sync aus Entra ID (implementiert)
 
-- Eine Entra-ID-**Gruppe** (Teams/Abteilungen) wird in die App gesynct, damit der
-  Berufsbildner Lernende Teams zuordnen kann (siehe Feature "Team-Rotation" in
-  `featurematrix.md`).
-- **Identifier: UPN** (User Principal Name), nicht die E-Mail-Adresse – auch wenn UPN und
-  E-Mail bei Swiss TPH meist identisch sind, ist der UPN der stabile Identifier für den
-  Abgleich mit Entra ID. Ob `data/accounts.csv` dafür eine eigene Spalte braucht oder ob
-  E-Mail/UPN als austauschbar behandelt werden, entscheidet Claude Code beim Bauen.
-- Sync-Mechanismus (z.B. periodischer Abruf via Microsoft Graph API
-  `GET /groups/{id}/members`, oder On-Demand-Button in den Berufsbildner-Einstellungen)
-  ist eine Implementierungsentscheidung von Claude Code – hier nur die Anforderung: die
-  Gruppenmitgliedschaft muss regelmässig aktualisierbar sein, ohne manuelle Pflege pro
-  Lernendem.
-- **API permissions** für den Gruppen-Read zusätzlich zu den unter "App-Registration"
-  genannten Delegated Permissions einplanen (z.B. `GroupMember.Read.All`, ggf. Application
-  Permission mit Admin-Consent, falls der Sync ohne eingeloggten Benutzerkontext laufen
-  soll).
+**Umgesetzter Mechanismus: On-Demand-Button, delegiert.** Der Berufsbildner öffnet
+*Einstellungen > Benutzer* und klickt "Jetzt synchronisieren". Die App liest mit dem
+Microsoft-Graph-Token des eingeloggten Berufsbildners (`session.provider_token`) die
+Mitglieder einer Entra-Gruppe über `GET /groups/{id}/members` und legt sie in
+`public.benutzer` an. Kein Backend-Dienst, kein gespeichertes App-Secret; die Graph-Calls
+laufen direkt aus dem Browser (Graph unterstützt CORS).
 
-## Rollen-Zuweisung nach Login
+- **Nur Personen → `benutzer`.** Gruppenmitglieder werden **ohne Rolle** angelegt
+  (`rolle IS NULL`); der Berufsbildner weist die Rolle danach in derselben Ansicht zu.
+  Bestehende Einträge werden nur in Stammdaten (Name, UPN) aktualisiert – Rolle, `aktiv`
+  und `ausbildungsstart` bleiben unangetastet. (Team-Sync von Entra-Gruppen → `team` ist
+  bewusst NICHT Teil dieser Etappe; Teams werden vorerst manuell gepflegt, das
+  `team.entra_gruppe_id`/`upn`-Feld bleibt für später.)
+- **Gruppen-Konfiguration in der App.** Gruppenname *oder* Gruppen-ID (GUID) werden in
+  *Einstellungen > Benutzer* eingetragen (lokal im Browser gespeichert, optionaler
+  Build-Default via `VITE_ENTRA_GROUP_NAME`/`VITE_ENTRA_GROUP_ID`). Ein Name wird beim
+  Sync per `GET /groups?$filter=displayName eq '...'` zur ID aufgelöst.
+- **Identifier: UPN** (User Principal Name) als stabiler Abgleich-Identifier, Fallback
+  E-Mail (`benutzer.upn` ist unique; UPN und E-Mail sind bei Swiss TPH meist identisch).
+- **Grenze des delegierten Ansatzes:** `provider_token` liegt nur unmittelbar nach dem
+  SSO-Login vor (nicht nach einem Token-Refresh, nicht beim Break-Glass-Login). Die App
+  weist darauf hin und bittet ggf. um erneute Entra-Anmeldung. Für einen
+  hintergrundbasierten, benutzerunabhängigen Sync wäre stattdessen ein App-Only-Flow
+  (Client-Credentials, Application Permission `GroupMember.Read.All` + Admin-Consent,
+  eigener geplanter Dienst) nötig – bewusst nicht umgesetzt.
+- **API permissions:** delegated `GroupMember.Read.All` (Mitgliedschaft) **und**
+  `User.ReadBasic.All` (Profilfelder anderer Benutzer), beide mit Admin-Consent (siehe
+  App-Registration, Schritt 5). Die App fordert beide Scopes beim Login mit an. Fehlt
+  `User.ReadBasic.All`, liest der Sync die Gruppe zwar, erhält aber leere Namen/E-Mails.
 
-Entra ID liefert keine Rolle (Lernende/Berufsbildner) automatisch mit. Nötig ist eine
-Zuordnung E-Mail → Rolle. Ausgangspunkt dafür: `data/accounts.csv`. Claude Code soll
-daraus einen sauberen Mechanismus bauen (z.B. Zuordnungstabelle + Auth-Trigger beim
-ersten Login), der vom Berufsbildner in der App gepflegt werden kann, wenn neue
-Lernende dazukommen.
+## Rollen-Zuweisung nach Login (implementiert)
+
+Entra ID liefert **keine** Rolle mit, und es wird **nie** automatisch eine Default-Rolle
+vergeben. Ablauf:
+
+- **Erst-Login (Auto-Provisionierung ohne Rolle).** Der Auth-Trigger
+  `app.handle_new_user()` (Migration `20260720120001_auth_autoprovision.sql`) verknüpft
+  einen neuen `auth.users`-Datensatz über die E-Mail mit einem vorhandenen
+  `benutzer`-Eintrag (Seed-Allowlist oder per Sync angelegt). Gibt es keinen, wird ein
+  neuer `benutzer`-Datensatz **mit `rolle = NULL`** angelegt. Rollenlos heisst: RLS
+  verweigert alles – der Account ist für den Berufsbildner sichtbar, hat aber keinen
+  Zugriff, bis eine Rolle vergeben wird.
+- **Rollen-Zuweisung durch den Berufsbildner.** In *Einstellungen > Benutzer* weist der
+  Berufsbildner jedem Konto eine Rolle zu (Lernende/Berufsbildner), setzt es aktiv/inaktiv
+  (Lehrabschluss → inaktiv statt löschen) und pflegt bei Lernenden Ausbildungsstart und
+  "macht BM". Das eigene Konto ist dort gegen Rollen-/Status-Änderung gesperrt
+  (Selbst-Aussperren verhindern); der Break-Glass-Login bleibt als Rückfallebene.
+- **Ausgangs-Allowlist:** `data/accounts.csv` seedet die ersten Konten (inkl.
+  Break-Glass-Admin und Isaak als Berufsbildner).
 
 ## Master-/Break-Glass-Login
 

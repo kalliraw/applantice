@@ -88,7 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signInEntra() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'azure',
-        options: { redirectTo: window.location.origin, scopes: 'openid email profile' },
+        options: {
+          redirectTo: window.location.origin,
+          // Für den Benutzer-Sync (Einstellungen > Benutzer):
+          //  - GroupMember.Read.All: Mitgliedschaft der Entra-Gruppe lesen.
+          //  - User.ReadBasic.All: Profilfelder (displayName/mail/userPrincipalName) ANDERER
+          //    Benutzer lesen. Ohne diesen Scope kommen die Mitglieder mit null-Werten zurück,
+          //    wenn der Tenant "Benutzer dürfen andere Benutzer lesen" einschränkt (Swiss TPH).
+          // Beide setzen Admin-Consent im Entra-Tenant voraus (authconcept.md); sonst würde
+          // die Zustimmung pro Benutzer verlangt bzw. der Login für Lernende blockiert.
+          scopes: 'openid email profile offline_access User.Read User.ReadBasic.All GroupMember.Read.All',
+        },
       })
       return error ? error.message : null
     },

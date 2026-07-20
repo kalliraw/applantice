@@ -21,8 +21,11 @@ COPY . .
 # in eine .env.production schreiben, damit Vite sie zuverlässig einliest.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-RUN printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' \
-      "$VITE_SUPABASE_URL" "$VITE_SUPABASE_ANON_KEY" > .env.production \
+# Optionaler Default für den Entra-Benutzer-Sync (leer = in der App zu setzen).
+ARG VITE_ENTRA_GROUP_NAME
+ARG VITE_ENTRA_GROUP_ID
+RUN printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\nVITE_ENTRA_GROUP_NAME=%s\nVITE_ENTRA_GROUP_ID=%s\n' \
+      "$VITE_SUPABASE_URL" "$VITE_SUPABASE_ANON_KEY" "$VITE_ENTRA_GROUP_NAME" "$VITE_ENTRA_GROUP_ID" > .env.production \
     && npm run build
 
 # ---------- Runtime-Stage ----------

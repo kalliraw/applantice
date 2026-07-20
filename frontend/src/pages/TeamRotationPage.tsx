@@ -480,6 +480,14 @@ function TeamModal({
   const [aktiv, setAktiv] = useState(team?.aktiv ?? true)
   const [speichert, setSpeichert] = useState(false)
 
+  // UPN aus der gewählten Person übernehmen (UPN, ersatzweise E-Mail). Bleibt
+  // manuell anpassbar; "— keine —" leert das Feld.
+  function waehleVerantwortlich(id: string) {
+    setVerantwortlich(id)
+    const person = benutzer.find((b) => b.id === id)
+    setUpn(person ? person.upn || person.email : '')
+  }
+
   async function speichern() {
     if (!name.trim()) return
     setSpeichert(true)
@@ -506,10 +514,15 @@ function TeamModal({
       <Select
         label="Verantwortliche Person"
         value={verantwortlich}
-        onChange={(e) => setVerantwortlich(e.target.value)}
+        onChange={(e) => waehleVerantwortlich(e.target.value)}
         options={[{ value: '', label: '— keine —' }, ...benutzer.map((b) => ({ value: b.id, label: b.name }))]}
       />
-      <TextField label="Entra-UPN (optional)" value={upn} onChange={(e) => setUpn(e.target.value)} hint="Identifier für späteren Entra-ID-Gruppen-Sync." />
+      <TextField
+        label="Entra-UPN (optional)"
+        value={upn}
+        onChange={(e) => setUpn(e.target.value)}
+        hint="Wird aus der verantwortlichen Person übernommen (UPN oder E-Mail) – anpassbar."
+      />
       {team && (
         <label className={s.aktivRow}>
           <input type="checkbox" checked={aktiv} onChange={(e) => setAktiv(e.target.checked)} />

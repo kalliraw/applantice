@@ -10,9 +10,32 @@ Dasselbe Schema läuft lokal (Supabase CLI) und produktiv (offizielles Self-Host
 | `migrations/20260713090001_schema.sql` | Enums, Tabellen, RLS-Hilfsfunktionen (Schema `app`) |
 | `migrations/20260713090002_rls.sql` | Row-Level-Security-Policies (Rollenmodell aus `planung/roles.md`) |
 | `migrations/20260713090003_auth.sql` | Auth-Trigger (E-Mail → Rolle beim ersten Login) |
+| `migrations/2026071309000{4-8}_*.sql` | Leistungsbeurteilung, Kompetenz-Cascade, Bildungsbericht, Team-Rotation, Modul→Semester-RPC |
+| `migrations/20260720120001_auth_autoprovision.sql` | Erst-Login legt unbekannte SSO-Benutzer **ohne Rolle** an (ersetzt Trigger aus `..._auth.sql`) |
+| `migrations/20260720120002_benutzer_delete.sql` | DELETE-Policy für `benutzer` (nur Berufsbildner; Historie schützt sich per FK) |
 | `seed.sql` | Generiert aus `data/*.csv` durch `scripts/generate-seed.mjs` |
 
 Reihenfolge: Migrationen (alphabetisch nach Dateiname), danach `seed.sql`.
+
+### Neue Migration in einen LAUFENDEN Docker-Stack einspielen
+
+`docker/migrator/apply.sh` bootstrappt nur eine **frische** DB (überspringt alles, sobald
+`public.benutzer` existiert). Eine nachträglich hinzugekommene Migration – z.B.
+`20260720120001_auth_autoprovision.sql` – wird daher bei einem einfachen
+`docker compose up` **nicht** angewandt. Zwei Wege:
+
+```bash
+# A) Frisch aufsetzen (Dev, verwirft Daten): Volume löschen, alles neu seeden
+docker compose down -v && docker compose up -d --build
+
+# B) Bestand behalten: die neuen (idempotenten) Migrationen manuell anwenden
+docker compose exec -T db psql -U supabase_admin -d postgres \
+  < supabase/migrations/20260720120001_auth_autoprovision.sql
+docker compose exec -T db psql -U supabase_admin -d postgres \
+  < supabase/migrations/20260720120002_benutzer_delete.sql
+# Danach PostgREST das Schema neu laden lassen (sonst greift die Policy evtl. verzögert):
+docker compose exec -T db psql -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
+```
 
 ## Lokal
 
