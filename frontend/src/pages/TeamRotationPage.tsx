@@ -23,7 +23,7 @@ import {
   toIsoDatum,
   wochenZwischen,
 } from '../lib/zeitstrahl.ts'
-import { Badge, Button, EmptyState, Modal, PageHeader, Select, Spinner, TextField } from '../ui/index.ts'
+import { Badge, Button, EmptyState, Modal, PageHeader, Select, Spinner, Tabs, TextField } from '../ui/index.ts'
 import { LernendeAuswahl } from '../components/LernendeAuswahl.tsx'
 import { sendeMailEreignis } from '../lib/mail.ts'
 import s from './Team.module.css'
@@ -48,23 +48,27 @@ export function TeamRotationPage() {
   const [hks, setHks] = useState<Handlungskompetenz[]>([])
   const [module, setModule] = useState<Fach[]>([])
   const [zuteilungen, setZuteilungen] = useState<TeamZuteilung[]>([])
+  const [alleZuteilungen, setAlleZuteilungen] = useState<TeamZuteilung[]>([])
   const [berichte, setBerichte] = useState<Bildungsbericht[]>([])
   const [ladt, setLadt] = useState(true)
+  const [ansicht, setAnsicht] = useState<'einzel' | 'planung'>('einzel')
 
   const [teamModal, setTeamModal] = useState<{ team: Team | null } | null>(null)
   const [zieleTeam, setZieleTeam] = useState<Team | null>(null)
-  const [zModal, setZModal] = useState<{ zuteilung: TeamZuteilung | null } | null>(null)
+  const [zModal, setZModal] = useState<{ zuteilung: TeamZuteilung | null; benutzerId: string } | null>(null)
   const [modulModal, setModulModal] = useState(false)
   const [detail, setDetail] = useState<TeamZuteilung | null>(null)
 
   async function ladeBasis() {
-    const [t, b, tk, lz, h, f] = await Promise.all([
+    const [t, b, tk, lz, h, f, az] = await Promise.all([
       supabase.from('team').select('*').order('name'),
       supabase.from('benutzer').select('*').order('name'),
       supabase.from('team_leistungsziel').select('*'),
       supabase.from('leistungsziel').select('*').order('sortierung'),
       supabase.from('handlungskompetenz').select('*').order('sortierung'),
       supabase.from('fach').select('*').not('modul_nr', 'is', null).order('modul_nr'),
+      // Alle Zuteilungen (RLS: Berufsbildner sieht alle) für die Team-Planungsübersicht.
+      supabase.from('team_zuteilung').select('*').order('von_datum'),
     ])
     setTeams((t.data as Team[]) ?? [])
     setBenutzer((b.data as Benutzer[]) ?? [])
@@ -72,6 +76,7 @@ export function TeamRotationPage() {
     setLzList((lz.data as Leistungsziel[]) ?? [])
     setHks((h.data as Handlungskompetenz[]) ?? [])
     setModule((f.data as Fach[]) ?? [])
+    setAlleZuteilungen((az.data as TeamZuteilung[]) ?? [])
   }
   async function ladeLernendenDaten() {
     if (!aktivId) {
@@ -104,12 +109,35 @@ export function TeamRotationPage() {
   // Zeitraum einer Zuteilung per Drag ändern (optimistisch, dann persistieren).
   async function updateZuteilungZeit(id: string, patch: { von_datum: string; bis_datum: string | null }) {
     setZuteilungen((c) => c.map((z) => (z.id === id ? { ...z, ...patch } : z)))
+    setAlleZuteilungen((c) => c.map((z) => (z.id === id ? { ...z, ...patch } : z)))
     await supabase.from('team_zuteilung').update(patch).eq('id', id)
   }
 
   const teamById = useMemo(() => Object.fromEntries(teams.map((t) => [t.id, t])), [teams])
   const benutzerName = (id: string | null) => (id ? benutzer.find((b) => b.id === id)?.name ?? null : null)
   const zieleCount = (teamId: string) => tlz.filter((x) => x.team_id === teamId).length
+
+  // Lernende für die Planungsübersicht: aktiv, mit Ausbildungsstart und noch nicht
+  // abgeschlossen (Ausbildungsende = Start + 4 Jahre liegt in der Zukunft). Sortiert
+  // vom weitesten (frühester Start = links) zum spätesten Start (rechts).
+  const aktiveLernende = useMemo(() => {
+    const heute = new Date()
+    return benutzer
+      .filter(
+        (b) =>
+          b.rolle === 'lernende' &&
+          b.aktiv &&
+          b.ausbildungsstart &&
+          ausbildungsEnde(D(b.ausbildungsstart)) >= heute,
+      )
+      .sort((a, b) =>
+        a.ausbildungsstart! < b.ausbildungsstart!
+          ? -1
+          : a.ausbildungsstart! > b.ausbildungsstart!
+            ? 1
+            : a.name.localeCompare(b.name),
+      )
+  }, [benutzer])
 
   if (ladt) return <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}><Spinner /></div>
 
@@ -118,22 +146,35 @@ export function TeamRotationPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Betriebliche Rotation"
-        title="Team-Rotation"
-        description="Zeitstrahl über die ganze Lehre: welches Team in welcher Kalenderwoche, welche Module in welchem Semester und welche Ziele wo geplant sind."
+        eyebrow="Planung"
+        title="Ausbildungsplanung"
+        description="Zeitstrahl über die ganze Lehre (Schule, Betrieb/Teams, Berichte) je Lernendem – plus eine Team-Planungsübersicht über alle Lernenden."
         actions={
           <>
-            <LernendeAuswahl />
-            <Button variant="secondary" onClick={() => setModulModal(true)}>Module planen</Button>
-            {istBB && (
-              <>
-                <Button variant="secondary" onClick={() => setTeamModal({ team: null })}>+ Team</Button>
-                {aktivId && <Button variant="primary" onClick={() => setZModal({ zuteilung: null })}>+ Zuteilung</Button>}
-              </>
+            {ansicht === 'einzel' && <LernendeAuswahl />}
+            {ansicht === 'einzel' && (
+              <Button variant="secondary" onClick={() => setModulModal(true)}>Module planen</Button>
+            )}
+            {istBB && <Button variant="secondary" onClick={() => setTeamModal({ team: null })}>+ Team</Button>}
+            {istBB && ansicht === 'einzel' && aktivId && (
+              <Button variant="primary" onClick={() => setZModal({ zuteilung: null, benutzerId: aktivId })}>+ Zuteilung</Button>
             )}
           </>
         }
       />
+
+      {istBB && (
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
+          <Tabs
+            tabs={[
+              { id: 'einzel', label: 'Zeitstrahl (einzeln)' },
+              { id: 'planung', label: 'Team-Planung (alle)' },
+            ]}
+            active={ansicht}
+            onChange={(id) => setAnsicht(id as 'einzel' | 'planung')}
+          />
+        </div>
+      )}
 
       {/* Teams-Leiste: alle Teams (auch ohne Zuteilung) */}
       {teams.length > 0 && (
@@ -165,7 +206,21 @@ export function TeamRotationPage() {
         </div>
       )}
 
-      {!aktivId ? (
+      {istBB && ansicht === 'planung' ? (
+        aktiveLernende.length === 0 ? (
+          <EmptyState title="Keine Lernenden" text="Es gibt keine aktiven Lernenden mit Ausbildungsstart." />
+        ) : (
+          <TeamPlanung
+            lernende={aktiveLernende}
+            zuteilungen={alleZuteilungen}
+            teamById={teamById}
+            onBand={(z) => setDetail(z)}
+            onAdd={(lernId) => setZModal({ zuteilung: null, benutzerId: lernId })}
+            onZuteilungZeit={updateZuteilungZeit}
+            istBB={istBB}
+          />
+        )
+      ) : !aktivId ? (
         <EmptyState title="Kein Lernender ausgewählt" text="Bitte oben eine lernende Person wählen." />
       ) : !start ? (
         <EmptyState title="Ausbildungsstart fehlt" text="Für den Zeitstrahl wird das Ausbildungsstart-Datum benötigt." />
@@ -191,7 +246,7 @@ export function TeamRotationPage() {
           team={teamModal.team}
           benutzer={benutzer}
           onClose={() => setTeamModal(null)}
-          onGespeichert={() => { setTeamModal(null); void ladeBasis() }}
+          onGespeichert={() => { setTeamModal(null); void ladeBasis(); void ladeLernendenDaten() }}
         />
       )}
       {istBB && zieleTeam && (
@@ -208,9 +263,9 @@ export function TeamRotationPage() {
         <ZuteilungModal
           zuteilung={zModal.zuteilung}
           teams={teams.filter((t) => t.aktiv || t.id === zModal.zuteilung?.team_id)}
-          benutzerId={aktivId}
+          benutzerId={zModal.benutzerId}
           onClose={() => setZModal(null)}
-          onGespeichert={() => { setZModal(null); void ladeLernendenDaten() }}
+          onGespeichert={() => { setZModal(null); void ladeBasis(); void ladeLernendenDaten() }}
         />
       )}
       {modulModal && (
@@ -230,7 +285,7 @@ export function TeamRotationPage() {
           hks={hks}
           istBB={istBB}
           onClose={() => setDetail(null)}
-          onEditZeit={() => { setZModal({ zuteilung: detail }); setDetail(null) }}
+          onEditZeit={() => { setZModal({ zuteilung: detail, benutzerId: detail.benutzer_id }); setDetail(null) }}
           onEditZiele={(t) => { setZieleTeam(t); setDetail(null) }}
         />
       )}
@@ -471,6 +526,171 @@ function Zeitstrahl({
   )
 }
 
+// ------------------------------------------------------------------ Team-Planungsübersicht (alle Lernenden)
+const PX_PRO_WOCHE_PLAN = 9
+const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+
+function TeamPlanung({
+  lernende, zuteilungen, teamById, onBand, onAdd, onZuteilungZeit, istBB,
+}: {
+  lernende: Benutzer[]
+  zuteilungen: TeamZuteilung[]
+  teamById: Record<string, Team>
+  onBand: (z: TeamZuteilung) => void
+  onAdd: (lernendeId: string) => void
+  onZuteilungZeit: (id: string, patch: { von_datum: string; bis_datum: string | null }) => void
+  istBB: boolean
+}) {
+  // Gemeinsame Kalenderachse über alle Lernenden (frühester Start … spätestes Ende).
+  const starts = lernende.map((l) => D(l.ausbildungsstart!))
+  const ends = starts.map((d) => ausbildungsEnde(d))
+  const globalStart = new Date(Math.min(...starts.map((d) => d.getTime())))
+  const globalEnd = new Date(Math.max(...ends.map((d) => d.getTime())))
+  const H = Math.round(wochenZwischen(globalStart, globalEnd) * PX_PRO_WOCHE_PLAN)
+  const top = (d: Date) => positionAnteil(d, globalStart, globalEnd) * H
+
+  // Drag-and-Drop (verschieben / Dauer ändern) – wie im Einzel-Zeitstrahl, aber je
+  // Band auf die Ausbildungszeit der jeweiligen Person begrenzt.
+  const [drag, setDrag] = useState<DragState | null>(null)
+  const msPerPx = (globalEnd.getTime() - globalStart.getTime()) / (H || 1)
+  const MIN_MS = 7 * 86400000
+
+  function beginDrag(e: ReactPointerEvent, z: TeamZuteilung, mode: DragMode, lStartMs: number, lEndMs: number) {
+    if (!istBB) return
+    e.preventDefault()
+    e.stopPropagation()
+    const startY = e.clientY
+    const von0 = D(z.von_datum).getTime()
+    const offen = !z.bis_datum
+    const bis0 = z.bis_datum ? D(z.bis_datum).getTime() : lEndMs
+    const dur = bis0 - von0
+    let latest: DragState = { id: z.id, mode, von: von0, bis: bis0, offen, moved: false }
+
+    const onMove = (ev: PointerEvent) => {
+      const deltaMs = (ev.clientY - startY) * msPerPx
+      let von = von0
+      let bis = bis0
+      if (mode === 'move') {
+        von = snapAufWoche(new Date(von0 + deltaMs)).getTime()
+        bis = von + dur
+        if (von < lStartMs) { von = lStartMs; bis = von + dur }
+        if (bis > lEndMs) { bis = lEndMs; von = bis - dur }
+      } else if (mode === 'top') {
+        von = snapAufWoche(new Date(von0 + deltaMs)).getTime()
+        von = Math.max(lStartMs, Math.min(von, bis0 - MIN_MS))
+        bis = bis0
+      } else {
+        bis = snapAufWoche(new Date(bis0 + deltaMs)).getTime()
+        bis = Math.min(lEndMs, Math.max(bis, von0 + MIN_MS))
+        von = von0
+      }
+      const moved = latest.moved || Math.abs(ev.clientY - startY) > 3
+      latest = { id: z.id, mode, von, bis, offen, moved }
+      setDrag(latest)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      setDrag(null)
+      if (latest.moved) {
+        const bis_datum = offen && mode !== 'bottom' ? null : toIsoDatum(new Date(latest.bis))
+        onZuteilungZeit(z.id, { von_datum: toIsoDatum(new Date(latest.von)), bis_datum })
+      } else {
+        onBand(z)
+      }
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  // Monats-Gitter (Linie + Label je Monat; Jahr beim Januar).
+  const monate: Date[] = []
+  const cur = new Date(globalStart.getFullYear(), globalStart.getMonth(), 1)
+  while (cur <= globalEnd) {
+    monate.push(new Date(cur))
+    cur.setMonth(cur.getMonth() + 1)
+  }
+
+  const heute = new Date()
+  const nowInRange = heute >= globalStart && heute <= globalEnd
+
+  const cols = `96px repeat(${lernende.length}, minmax(150px, 1fr))`
+  const minW = 96 + lernende.length * 150
+
+  return (
+    <div className={s.planWrap}>
+      <div className={s.planHeader} style={{ gridTemplateColumns: cols, minWidth: minW }}>
+        <div className={s.planHeadZeit}>Zeit</div>
+        {lernende.map((l) => (
+          <div key={l.id} className={s.planHeadLane}>
+            <span className={s.planHeadName}>{l.name}</span>
+            {istBB && (
+              <button className={s.planAdd} title="Zuteilung hinzufügen" onClick={() => onAdd(l.id)}>+</button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className={s.planGrid} style={{ gridTemplateColumns: cols, minWidth: minW, height: H }}>
+        {monate.map((m, i) => (
+          <div key={`ml-${i}`} className={s.planMonthLine} style={{ top: top(m) }} />
+        ))}
+
+        <div className={s.planAchse}>
+          {monate.map((m, i) => (
+            <div key={`lab-${i}`} className={s.planMonthLabel} style={{ top: top(m) }}>
+              {MONATE[m.getMonth()]} {m.getMonth() === 0 ? m.getFullYear() : String(m.getFullYear()).slice(2)}
+            </div>
+          ))}
+        </div>
+
+        {lernende.map((l) => {
+          const lStart = D(l.ausbildungsstart!)
+          const lEnd = ausbildungsEnde(lStart)
+          const zs = zuteilungen.filter((z) => z.benutzer_id === l.id)
+          return (
+            <div key={l.id} className={s.planLane}>
+              <div className={s.planAktiv} style={{ top: top(lStart), height: top(lEnd) - top(lStart) }} />
+              {zs.length === 0 && <div className={s.planLeer} style={{ top: top(lStart) + 6 }}>keine Zuteilung</div>}
+              {zs.map((z) => {
+                const team = teamById[z.team_id]
+                const istDrag = drag?.id === z.id
+                const vonMs = istDrag ? drag!.von : D(z.von_datum).getTime()
+                const bisMs = istDrag ? drag!.bis : z.bis_datum ? D(z.bis_datum).getTime() : lEnd.getTime()
+                const von = new Date(vonMs)
+                const bis = new Date(bisMs)
+                const offen = istDrag ? drag!.offen && drag!.mode !== 'bottom' : !z.bis_datum
+                const farbe = team ? teamFarbe(team.id) : 'var(--accent)'
+                return (
+                  <button
+                    key={z.id}
+                    className={`${s.planBar} ${istBB ? s.teamBarDrag : ''} ${istDrag ? s.teamBarAktiv : ''}`}
+                    style={{ top: top(von), height: Math.max(26, top(bis) - top(von)), ['--tc' as string]: farbe }}
+                    onPointerDown={istBB ? (e) => beginDrag(e, z, 'move', lStart.getTime(), lEnd.getTime()) : undefined}
+                    onClick={istBB ? undefined : () => onBand(z)}
+                    title={istBB ? 'Ziehen zum Verschieben · Kanten für Dauer · Klick für Details' : `${team?.name ?? 'Team?'} · ${fmtVoll(z.von_datum)} – ${offen ? 'offen' : fmtVoll(z.bis_datum!)}`}
+                  >
+                    {istBB && <div className={s.griffTop} onPointerDown={(e) => beginDrag(e, z, 'top', lStart.getTime(), lEnd.getTime())} />}
+                    <span className={s.planBarName}>{team?.name ?? 'Team?'}</span>
+                    <span className={s.planBarKw}>KW {isoWoche(von)}–{offen ? 'offen' : isoWoche(bis)}</span>
+                    {istBB && <div className={s.griffBottom} onPointerDown={(e) => beginDrag(e, z, 'bottom', lStart.getTime(), lEnd.getTime())} />}
+                  </button>
+                )
+              })}
+            </div>
+          )
+        })}
+
+        {nowInRange && (
+          <div className={s.nowLine} style={{ top: top(heute) }}>
+            <span className={s.nowLabel}>Heute</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ------------------------------------------------------------------ Team anlegen/bearbeiten
 function TeamModal({
   team, benutzer, onClose, onGespeichert,
@@ -480,6 +700,8 @@ function TeamModal({
   const [upn, setUpn] = useState(team?.upn ?? '')
   const [aktiv, setAktiv] = useState(team?.aktiv ?? true)
   const [speichert, setSpeichert] = useState(false)
+  const [loescht, setLoescht] = useState(false)
+  const [fehler, setFehler] = useState<string | null>(null)
 
   // UPN aus der gewählten Person übernehmen (UPN, ersatzweise E-Mail). Bleibt
   // manuell anpassbar; "— keine —" leert das Feld.
@@ -504,9 +726,46 @@ function TeamModal({
     onGespeichert()
   }
 
+  async function loeschen() {
+    if (!team) return
+    if (
+      !window.confirm(
+        `Team „${team.name}" wirklich löschen?\n\nAlle Zuteilungen dieses Teams (bei allen Lernenden) sowie ` +
+          `zugewiesene Ziele/Kompetenzen werden mitentfernt. Alternativ „Team aktiv" deaktivieren.`,
+      )
+    )
+      return
+    setLoescht(true)
+    setFehler(null)
+    // team_zuteilung hat kein ON DELETE CASCADE -> erst die Zuteilungen entfernen,
+    // dann das Team (Ziele/Kompetenzen des Teams cascaden automatisch).
+    const { error: tzErr } = await supabase.from('team_zuteilung').delete().eq('team_id', team.id)
+    if (tzErr) {
+      setLoescht(false)
+      setFehler(`Zuteilungen entfernen fehlgeschlagen: ${tzErr.message}`)
+      return
+    }
+    const { data, error } = await supabase.from('team').delete().eq('id', team.id).select('id')
+    setLoescht(false)
+    if (error) {
+      setFehler(`Löschen fehlgeschlagen: ${error.message}`)
+      return
+    }
+    if (!data || data.length === 0) {
+      setFehler('Löschen wurde nicht ausgeführt (fehlende Berechtigung?).')
+      return
+    }
+    onGespeichert()
+  }
+
   return (
     <Modal open onClose={onClose} title={team ? 'Team bearbeiten' : 'Neues Team'} footer={
       <>
+        {team && (
+          <Button variant="danger" loading={loescht} onClick={() => void loeschen()} style={{ marginRight: 'auto' }}>
+            Löschen
+          </Button>
+        )}
         <Button variant="ghost" onClick={onClose}>Abbrechen</Button>
         <Button variant="primary" loading={speichert} onClick={() => void speichern()}>Speichern</Button>
       </>
@@ -530,6 +789,7 @@ function TeamModal({
           Team aktiv
         </label>
       )}
+      {fehler && <p style={{ color: 'var(--fehler-fg)', fontSize: '0.85rem', marginTop: 'var(--sp-3)' }}>{fehler}</p>}
     </Modal>
   )
 }

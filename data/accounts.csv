@@ -1,6 +1,2 @@
 email,name,rolle,auth_typ,ausbildungsstart,passwort_platzhalter,bemerkung
-admin@swisstph.ch,Break-Glass Admin,berufsbildner,lokal,,um2LmiUZMEoD8E4qEayj,"Master-/Break-Glass-Login ohne SSO. Passwort sofort nach erstem Login aendern, danach dieses Feld hier leeren. Siehe authconcept.md."
-isaak.kallehave@swisstph.ch,Isaak Kallehave,berufsbildner,entra_id,,,"Login via Entra ID SSO, siehe authconcept.md."
-tomek.wenzel@swisstph.ch,Tomek Wenzel,lernende,entra_id,2024-08-01,,"Beispiel-Lernender. Ausbildungsstart 01.08.2024."
-TODO-lernender-2@swisstph.ch,TODO Name Lernende(r) 2,lernende,entra_id,,,"Platzhalter - echte E-Mail/Name/Ausbildungsstart vor dem Seeden eintragen."
-test.lernende@swisstph.ch,Test Lernende,lernende,lokal,2025-08-01,lernende2026,"Test-Lernende(r) mit lokalem Login zum Ausprobieren der Lernenden-Rolle (SSO noch aus). Passwort produktiv entfernen."
+ausbildungsplan-admin@swisstph.ch,Break-Glass Admin,berufsbildner,lokal,,um2LmiUZMEoD8E4qEayj,"Master-/Break-Glass-Login ohne SSO. Passwort sofort nach erstem Login aendern, danach dieses Feld hier leeren. Siehe authconcept.md."

@@ -36,7 +36,8 @@ export function App() {
             <Route path="/noten" element={<NotenPage />} />
             <Route path="/bildungsbericht" element={<BildungsberichtPage />} />
             <Route path="/faecher" element={<FaecherPage />} />
-            <Route path="/teams" element={<TeamRotationPage />} />
+            <Route path="/planung" element={<TeamRotationPage />} />
+            <Route path="/teams" element={<Navigate to="/planung" replace />} />
             <Route path="/einstellungen" element={<EinstellungenPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
