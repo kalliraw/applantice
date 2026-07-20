@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase.ts'
 import { useAuth } from '../auth/AuthContext.tsx'
-import type { Benutzer, Rolle } from '../lib/types.ts'
+import type { Benutzer, Betreuung, Rolle } from '../lib/types.ts'
 import {
   EntraSyncFehler,
   holeProviderToken,
@@ -35,12 +35,29 @@ type EditState = {
   macht_bm: boolean
 }
 
+const ROLLE_OPTIONEN: { value: Rolle; label: string }[] = [
+  { value: 'lernende', label: 'Lernende(r)' },
+  { value: 'teamowner', label: 'Teamowner' },
+  { value: 'berufsbildner', label: 'Berufsbildner' },
+  { value: 'admin', label: 'Admin' },
+]
+
+function rolleLabel(r: Rolle | null): string {
+  return ROLLE_OPTIONEN.find((o) => o.value === r)?.label ?? 'ohne Rolle'
+}
+
+const heuteIso = () => new Date().toISOString().slice(0, 10)
+
 export function EinstellungenPage() {
   const { profil } = useAuth()
-  const istBB = profil?.rolle === 'berufsbildner'
+  const istBB = profil?.rolle === 'berufsbildner' || profil?.rolle === 'admin'
+  // Betreuungen zuweisen darf ausschliesslich der Admin (verhindert Selbst-Elevierung
+  // eines Berufsbildners auf fremde Lernenden-Daten).
+  const istAdmin = profil?.rolle === 'admin'
 
-  const [tab, setTab] = useState<'benutzer' | 'benachr'>('benutzer')
+  const [tab, setTab] = useState<'benutzer' | 'betreuung' | 'benachr'>('benutzer')
   const [benutzer, setBenutzer] = useState<Benutzer[]>([])
+  const [betreuungen, setBetreuungen] = useState<Betreuung[]>([])
   const [benachr, setBenachr] = useState<Record<string, boolean>>({})
   const [ladt, setLadt] = useState(true)
   const [edit, setEdit] = useState<EditState | null>(null)
@@ -67,6 +84,10 @@ export function EinstellungenPage() {
     setBenutzer((data as Benutzer[]) ?? [])
     setLadt(false)
   }
+  async function ladeBetreuungen() {
+    const { data } = await supabase.from('betreuung').select('*')
+    setBetreuungen((data as Betreuung[]) ?? [])
+  }
   async function ladeBenachr() {
     const { data } = await supabase.from('benachrichtigung_einstellung').select('typ, aktiv')
     const m: Record<string, boolean> = {}
@@ -81,6 +102,7 @@ export function EinstellungenPage() {
   }
   useEffect(() => {
     void laden()
+    void ladeBetreuungen()
     void ladeBenachr()
     void holeProviderToken().then((t) => setTokenDa(Boolean(t)))
   }, [])
@@ -102,7 +124,7 @@ export function EinstellungenPage() {
     return sortiert.filter((b) => {
       if (q && !(b.name.toLowerCase().includes(q) || b.email.toLowerCase().includes(q))) return false
       if (fRolle === 'ohne' && b.rolle !== null) return false
-      if ((fRolle === 'lernende' || fRolle === 'berufsbildner') && b.rolle !== fRolle) return false
+      if (fRolle && fRolle !== 'ohne' && b.rolle !== fRolle) return false
       if (fTyp && b.auth_typ !== fTyp) return false
       if (fStatus === 'aktiv' && !b.aktiv) return false
       if (fStatus === 'inaktiv' && b.aktiv) return false
@@ -212,7 +234,7 @@ export function EinstellungenPage() {
   }
 
   if (!istBB) {
-    return <EmptyState title="Kein Zugriff" text="Nur Berufsbildner können Benutzer und Einstellungen verwalten." />
+    return <EmptyState title="Kein Zugriff" text="Nur Berufsbildner und Admins können Benutzer und Einstellungen verwalten." />
   }
   if (ladt) return <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}><Spinner /></div>
 
@@ -230,10 +252,11 @@ export function EinstellungenPage() {
       <Tabs
         tabs={[
           { id: 'benutzer', label: 'Benutzerverwaltung' },
+          ...(istAdmin ? [{ id: 'betreuung', label: 'Betreuung' }] : []),
           { id: 'benachr', label: 'Benachrichtigungen' },
         ]}
         active={tab}
-        onChange={(id) => setTab(id as 'benutzer' | 'benachr')}
+        onChange={(id) => setTab(id as 'benutzer' | 'betreuung' | 'benachr')}
       />
 
       {tab === 'benutzer' && (
@@ -314,8 +337,7 @@ export function EinstellungenPage() {
             options={[
               { value: '', label: 'Alle Rollen' },
               { value: 'ohne', label: 'ohne Rolle' },
-              { value: 'lernende', label: 'Lernende' },
-              { value: 'berufsbildner', label: 'Berufsbildner' },
+              ...ROLLE_OPTIONEN.map((o) => ({ value: o.value, label: o.label })),
             ]}
           />
           <Select
@@ -364,10 +386,8 @@ export function EinstellungenPage() {
                 <td className={s.mono}>{b.email}</td>
                 <td>{b.auth_typ === 'lokal' ? <Badge tone="warn">lokal</Badge> : <Badge tone="neutral">Entra</Badge>}</td>
                 <td>
-                  {b.rolle === 'berufsbildner' ? (
-                    <Badge tone="accent">Berufsbildner</Badge>
-                  ) : b.rolle === 'lernende' ? (
-                    <Badge tone="neutral">Lernende(r)</Badge>
+                  {b.rolle ? (
+                    <Badge tone={b.rolle === 'lernende' ? 'neutral' : 'accent'}>{rolleLabel(b.rolle)}</Badge>
                   ) : (
                     <Badge tone="warn">ohne Rolle</Badge>
                   )}
@@ -389,6 +409,17 @@ export function EinstellungenPage() {
         </table>
       </div>
       </div>
+      )}
+
+      {tab === 'betreuung' && istAdmin && (
+        <div className={s.tabInhalt}>
+          <BetreuungTab
+            benutzer={benutzer}
+            betreuungen={betreuungen}
+            eigenId={profil?.id ?? null}
+            onChange={ladeBetreuungen}
+          />
+        </div>
       )}
 
       {tab === 'benachr' && (
@@ -455,8 +486,7 @@ export function EinstellungenPage() {
             disabled={eigenesKonto}
             options={[
               { value: '', label: 'ohne Rolle (kein Zugriff)' },
-              { value: 'lernende', label: 'Lernende(r)' },
-              { value: 'berufsbildner', label: 'Berufsbildner' },
+              ...ROLLE_OPTIONEN.map((o) => ({ value: o.value, label: o.label })),
             ]}
           />
 
@@ -493,5 +523,153 @@ export function EinstellungenPage() {
         </Modal>
       )}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Betreuungs-Übersicht (lernenden-zentriert): auf einen Blick, wer wen betreut,
+// und welche Lernenden noch KEINE Betreuung haben.
+//   * aktiv = betreuung mit bis_datum IS NULL (offene Betreuung).
+//   * Zuweisen  = neue offene betreuung-Zeile (ab heute).
+//   * Entfernen = bis_datum = heute setzen (Historie bleibt erhalten, roles.md).
+// ---------------------------------------------------------------------
+function BetreuungTab({
+  benutzer, betreuungen, eigenId, onChange,
+}: {
+  benutzer: Benutzer[]
+  betreuungen: Betreuung[]
+  eigenId: string | null
+  onChange: () => Promise<void> | void
+}) {
+  // Betreuer können Berufsbildner UND Admins sein (ein Admin ist oft zugleich
+  // ausbildender Berufsbildner und soll ebenfalls Lernende zugewiesen bekommen).
+  const betreuer = useMemo(
+    () =>
+      benutzer
+        .filter((b) => (b.rolle === 'berufsbildner' || b.rolle === 'admin') && b.aktiv)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [benutzer],
+  )
+  const lernende = useMemo(
+    () => benutzer.filter((b) => b.rolle === 'lernende' && b.aktiv).sort((a, b) => a.name.localeCompare(b.name)),
+    [benutzer],
+  )
+  const betreuerById = useMemo(() => Object.fromEntries(betreuer.map((b) => [b.id, b])), [betreuer])
+
+  // Aktive (offene) Betreuungen pro Lernendem.
+  const proLernende = useMemo(() => {
+    const m = new Map<string, Betreuung[]>()
+    for (const b of betreuungen) {
+      if (b.bis_datum) continue // beendet -> nicht mehr aktiv
+      const arr = m.get(b.lernende_id) ?? []
+      arr.push(b)
+      m.set(b.lernende_id, arr)
+    }
+    return m
+  }, [betreuungen])
+
+  const ohneBetreuung = lernende.filter((l) => !(proLernende.get(l.id)?.length)).length
+  const [busy, setBusy] = useState(false)
+  const [fehler, setFehler] = useState<string | null>(null)
+
+  async function zuweisen(lernendeId: string, betreuerId: string) {
+    if (!betreuerId) return
+    setBusy(true)
+    setFehler(null)
+    const { error } = await supabase.from('betreuung').insert({
+      berufsbildner_id: betreuerId,
+      lernende_id: lernendeId,
+      von_datum: heuteIso(),
+      erstellt_von: eigenId,
+    })
+    if (error) setFehler(`Zuweisen fehlgeschlagen: ${error.message}`)
+    await onChange()
+    setBusy(false)
+  }
+  async function entfernen(betreuungId: string) {
+    setBusy(true)
+    setFehler(null)
+    const { error } = await supabase.from('betreuung').update({ bis_datum: heuteIso() }).eq('id', betreuungId)
+    if (error) setFehler(`Entfernen fehlgeschlagen: ${error.message}`)
+    await onChange()
+    setBusy(false)
+  }
+
+  if (betreuer.length === 0) {
+    return (
+      <EmptyState
+        title="Keine Betreuer"
+        text="Lege zuerst mindestens einen Benutzer mit Rolle „Berufsbildner“ oder „Admin“ an (Tab Benutzerverwaltung)."
+      />
+    )
+  }
+
+  return (
+    <Card title="Betreuung">
+      <p className={`muted ${s.syncLead}`}>
+        Wer betreut wen. Ein Berufsbildner sieht nur die ihm zugewiesenen Lernenden (Noten, Berichte,
+        Einschätzungen); Admins sehen ohnehin alle. Betreuungen kann nur ein Admin ändern.
+      </p>
+
+      <div className={s.betrKopf}>
+        <Badge tone="neutral">{lernende.length} Lernende</Badge>
+        {ohneBetreuung > 0 ? (
+          <Badge tone="warn">{ohneBetreuung} ohne Betreuung</Badge>
+        ) : (
+          <Badge tone="accent">alle zugewiesen</Badge>
+        )}
+      </div>
+
+      <div className={s.betrListe}>
+        {lernende.length === 0 && <p className="muted" style={{ margin: 0 }}>Keine aktiven Lernenden.</p>}
+        {lernende.map((l) => {
+          const zug = proLernende.get(l.id) ?? []
+          const zugewiesen = new Set(zug.map((z) => z.berufsbildner_id))
+          const verfuegbar = betreuer.filter((b) => !zugewiesen.has(b.id))
+          return (
+            <div key={l.id} className={`${s.betrRow} ${zug.length === 0 ? s.betrRowLeer : ''}`}>
+              <div className={s.betrLern}>
+                <span className={s.betrName}>{l.name}</span>
+                <span className={s.betrMail}>{l.email}</span>
+              </div>
+              <div className={s.betrChips}>
+                {zug.length === 0 && <Badge tone="warn">keine Betreuung</Badge>}
+                {zug.map((z) => (
+                  <span key={z.id} className={s.betrChip}>
+                    {betreuerById[z.berufsbildner_id]?.name ?? 'unbekannt'}
+                    <button
+                      type="button"
+                      className={s.betrChipX}
+                      disabled={busy}
+                      title="Betreuung beenden"
+                      onClick={() => void entfernen(z.id)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {verfuegbar.length > 0 && (
+                  <select
+                    className={s.betrAdd}
+                    value=""
+                    disabled={busy}
+                    onChange={(e) => void zuweisen(l.id, e.target.value)}
+                  >
+                    <option value="">+ Betreuer …</option>
+                    {verfuegbar.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.rolle === 'admin' ? `${b.name} (Admin)` : b.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {fehler && <p className={s.warn} style={{ marginTop: 'var(--sp-3)' }}>{fehler}</p>}
+    </Card>
   )
 }

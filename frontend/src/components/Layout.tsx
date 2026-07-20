@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext.tsx'
+import type { Rolle } from '../lib/types.ts'
 import { Badge, Icon, type IconName } from '../ui/index.ts'
 import styles from './Layout.module.css'
 
@@ -7,21 +8,32 @@ type NavEintrag = {
   pfad: string
   label: string
   icon: IconName
-  nurBB?: boolean
-  nurLernende?: boolean
+  /** Rollen, die diesen Eintrag sehen. */
+  rollen: Rolle[]
 }
 
+const ALLE_FACH: Rolle[] = ['lernende', 'berufsbildner', 'admin']
+const VERWALTUNG: Rolle[] = ['berufsbildner', 'admin']
+
 const NAV: NavEintrag[] = [
-  { pfad: '/', label: 'Start', icon: 'home' },
-  { pfad: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { pfad: '/handlungskompetenzen', label: 'Handlungskompetenzen', icon: 'target' },
-  { pfad: '/selbsteinschaetzung', label: 'Selbsteinschätzung', icon: 'check-square', nurLernende: true },
-  { pfad: '/noten', label: 'Notenrechner', icon: 'calculator' },
-  { pfad: '/bildungsbericht', label: 'Bildungsbericht', icon: 'file-text' },
-  { pfad: '/faecher', label: 'Fächer verwalten', icon: 'book', nurBB: true },
-  { pfad: '/planung', label: 'Ausbildungsplanung', icon: 'calendar' },
-  { pfad: '/einstellungen', label: 'Einstellungen', icon: 'settings', nurBB: true },
+  { pfad: '/', label: 'Start', icon: 'home', rollen: ['lernende', 'teamowner', 'berufsbildner', 'admin'] },
+  { pfad: '/dashboard', label: 'Dashboard', icon: 'dashboard', rollen: ALLE_FACH },
+  { pfad: '/mein-team', label: 'Mein Team', icon: 'target', rollen: ['teamowner'] },
+  { pfad: '/handlungskompetenzen', label: 'Handlungskompetenzen', icon: 'target', rollen: ALLE_FACH },
+  { pfad: '/selbsteinschaetzung', label: 'Selbsteinschätzung', icon: 'check-square', rollen: ['lernende'] },
+  { pfad: '/noten', label: 'Notenrechner', icon: 'calculator', rollen: ALLE_FACH },
+  { pfad: '/bildungsbericht', label: 'Bildungsbericht', icon: 'file-text', rollen: ALLE_FACH },
+  { pfad: '/faecher', label: 'Fächer verwalten', icon: 'book', rollen: VERWALTUNG },
+  { pfad: '/planung', label: 'Ausbildungsplanung', icon: 'calendar', rollen: ALLE_FACH },
+  { pfad: '/einstellungen', label: 'Einstellungen', icon: 'settings', rollen: VERWALTUNG },
 ]
+
+const ROLLE_LABEL: Record<Rolle, string> = {
+  lernende: 'Lernende(r)',
+  teamowner: 'Teamowner',
+  berufsbildner: 'Berufsbildner',
+  admin: 'Admin',
+}
 
 function initialen(name: string): string {
   return name
@@ -38,9 +50,7 @@ export function Layout() {
 
   const sichtbar = NAV.filter((n) => {
     if (rolle === null) return n.pfad === '/'
-    if (n.nurBB) return rolle === 'berufsbildner'
-    if (n.nurLernende) return rolle === 'lernende'
-    return true
+    return n.rollen.includes(rolle)
   })
 
   return (
@@ -48,10 +58,14 @@ export function Layout() {
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
           <div className={styles.logo}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <rect x="3" y="13" width="4" height="8" rx="1.2" fill="#fff" opacity="0.75" />
-              <rect x="10" y="8" width="4" height="13" rx="1.2" fill="#fff" opacity="0.88" />
-              <rect x="17" y="3" width="4" height="18" rx="1.2" fill="#fff" />
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5M13.7 4.5l-3.4 15"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
           <div className={styles.brandText}>
@@ -83,8 +97,8 @@ export function Layout() {
           <div className={styles.userinfo}>
             <div className={styles.username}>{profil?.name}</div>
             {rolle ? (
-              <Badge tone={rolle === 'berufsbildner' ? 'accent' : 'neutral'}>
-                {rolle === 'berufsbildner' ? 'Berufsbildner' : 'Lernende(r)'}
+              <Badge tone={rolle === 'lernende' ? 'neutral' : 'accent'}>
+                {ROLLE_LABEL[rolle]}
               </Badge>
             ) : (
               <Badge tone="warn">ohne Rolle</Badge>

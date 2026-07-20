@@ -84,17 +84,20 @@ vergeben. Ablauf:
   neuer `benutzer`-Datensatz **mit `rolle = NULL`** angelegt. Rollenlos heisst: RLS
   verweigert alles – der Account ist für den Berufsbildner sichtbar, hat aber keinen
   Zugriff, bis eine Rolle vergeben wird.
-- **Rollen-Zuweisung durch den Berufsbildner.** In *Einstellungen > Benutzer* weist der
-  Berufsbildner jedem Konto eine Rolle zu (Lernende/Berufsbildner), setzt es aktiv/inaktiv
-  (Lehrabschluss → inaktiv statt löschen) und pflegt bei Lernenden Ausbildungsstart und
-  "macht BM". Das eigene Konto ist dort gegen Rollen-/Status-Änderung gesperrt
-  (Selbst-Aussperren verhindern); der Break-Glass-Login bleibt als Rückfallebene.
-- **Ausgangs-Allowlist:** `data/accounts.csv` seedet die ersten Konten (inkl.
-  Break-Glass-Admin und Isaak als Berufsbildner).
+- **Rollen-Zuweisung durch Admin/Berufsbildner.** In *Einstellungen > Benutzer* weist ein
+  Admin oder Berufsbildner jedem Konto eine der vier Rollen zu (Lernende/Teamowner/
+  Berufsbildner/Admin – siehe `roles.md`), setzt es aktiv/inaktiv (Lehrabschluss → inaktiv
+  statt löschen) und pflegt bei Lernenden Ausbildungsstart und "macht BM". In
+  *Einstellungen > Betreuung* wird zugewiesen, welcher Berufsbildner welche Lernenden
+  sieht. Das eigene Konto ist gegen Rollen-/Status-Änderung gesperrt (Selbst-Aussperren
+  verhindern); der Break-Glass-Login (Admin) bleibt als Rückfallebene.
+- **Ausgangs-Allowlist:** `data/accounts.csv` seedet die ersten Konten (Break-Glass-Admin
+  mit Rolle `admin`; weitere Berufsbildner/Lernende folgen per Sync/Zuweisung).
 
 ## Master-/Break-Glass-Login
 
-Ein einzelner lokaler Account **ohne** Entra-ID/SSO, fest mit Rolle Berufsbildner, für
+Ein einzelner lokaler Account **ohne** Entra-ID/SSO, fest mit Rolle **Admin** (sieht alle
+Lernenden, vergibt Rollen + Betreuungen – der Bootstrap des Rollensystems), für
 den Fall dass SSO nicht erreichbar oder falsch konfiguriert ist. Ausgangsdaten
 (Platzhalter-Passwort) in `data/accounts.csv` (Zeile `admin@swisstph.ch`). Passwort bei
 Erstinbetriebnahme sofort ändern, danach den Platzhalter-Wert aus der CSV entfernen.

@@ -311,7 +311,7 @@ insert into public.fach (name, modul_nr, kontext, typ, notenkomponente_id, gewic
 
 -- Benutzer/Allowlist (aus data/accounts.csv). auth_user_id wird beim ersten Login verknüpft.
 insert into public.benutzer (email, name, rolle, auth_typ, ausbildungsstart) values
-  ('ausbildungsplan-admin@swisstph.ch', 'Break-Glass Admin', 'berufsbildner', 'lokal', null);
+  ('ausbildungsplan-admin@swisstph.ch', 'Break-Glass Admin', 'admin', 'lokal', null);
 
 -- Break-Glass-Login (ausbildungsplan-admin@swisstph.ch). Passwort NACH erstem Login ändern, danach
 -- passwort_platzhalter in data/accounts.csv leeren und Seed neu generieren.

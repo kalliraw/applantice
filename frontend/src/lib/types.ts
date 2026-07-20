@@ -1,7 +1,7 @@
 // Domänen-Typen, gespiegelt aus dem Postgres-Schema (supabase/migrations).
 // Bewusst als Datenschicht-Typen gehalten; RLS bestimmt, welche Zeilen sichtbar sind.
 
-export type Rolle = 'lernende' | 'berufsbildner'
+export type Rolle = 'lernende' | 'teamowner' | 'berufsbildner' | 'admin'
 
 export type Benutzer = {
   id: string
@@ -154,6 +154,16 @@ export type TeamZuteilung = {
   id: string
   benutzer_id: string
   team_id: string
+  von_datum: string
+  bis_datum: string | null
+  notiz: string | null
+}
+
+/** Zuweisung Berufsbildner -> Lernende (historisiert, mehrere BB pro Lernendem). */
+export type Betreuung = {
+  id: string
+  berufsbildner_id: string
+  lernende_id: string
   von_datum: string
   bis_datum: string | null
   notiz: string | null

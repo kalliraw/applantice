@@ -1,2 +1,2 @@
 email,name,rolle,auth_typ,ausbildungsstart,passwort_platzhalter,bemerkung
-ausbildungsplan-admin@swisstph.ch,Break-Glass Admin,berufsbildner,lokal,,um2LmiUZMEoD8E4qEayj,"Master-/Break-Glass-Login ohne SSO. Passwort sofort nach erstem Login aendern, danach dieses Feld hier leeren. Siehe authconcept.md."
+ausbildungsplan-admin@swisstph.ch,Break-Glass Admin,admin,lokal,,um2LmiUZMEoD8E4qEayj,"Master-/Break-Glass-Login ohne SSO. Rolle 'admin' (sieht alle Lernenden, vergibt Rollen + Betreuungen). Passwort sofort nach erstem Login aendern, danach dieses Feld hier leeren. Siehe authconcept.md/roles.md."
