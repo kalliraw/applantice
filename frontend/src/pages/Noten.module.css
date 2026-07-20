@@ -151,12 +151,9 @@
   padding: var(--sp-2);
   border-radius: var(--r-pill);
   overflow: hidden;
-  border: 1px solid rgba(142, 128, 198, 0.3);
-  background: linear-gradient(180deg, #1d1934, #141021);
-  box-shadow:
-    0 20px 55px -14px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(142, 128, 198, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--sh-md);
 }
 /* Hero-Block: Gesamtnote, unverwechselbar in Indigo. */
 .gesamt {
@@ -181,7 +178,7 @@
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--farbe-gelb);
+  color: var(--mint-700);
 }
 .gesamtWertLeer {
   color: var(--text-3);
@@ -453,8 +450,8 @@
   border-radius: var(--r-sm);
 }
 .lbDel:hover {
-  background: rgba(190, 60, 70, 0.18);
-  color: #ffd0d0;
+  background: rgba(220, 60, 54, 0.12);
+  color: #b42318;
 }
 .lbFoot {
   display: flex;

@@ -1,6 +1,6 @@
 .treffer {
-  background: rgba(221, 226, 74, 0.85);
-  color: #1a1808;
+  background: var(--mint-300);
+  color: var(--mint-900);
   border-radius: 3px;
   padding: 0 2px;
   font-weight: 600;

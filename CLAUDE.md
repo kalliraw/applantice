@@ -39,7 +39,7 @@ planung/                    Konzeptionelle Vorgaben (von Isaak geprüft/korrigie
                               geklärt werden müssen
   roles.md                    Rollenmodell: Lernende vs. Berufsbildner, wer darf was
   authconcept.md              Entra ID SSO, Break-Glass-Login, Team-Sync aus Entra ID
-  design.md                   Swiss TPH Corporate Design, Dark Mode als Grundmodus
+  design.md                   Farbpalette & Design (helle Mint-Palette, kein Corporate-Zwang)
   techstack.md                Frontend/Backend/Hosting/Zugriffskontrolle/Datenmodell-Prinzipien
                               (bewusst OHNE Datenbankschema)
   mailmodule.md                Anforderungen an das SMTP-Mail-Modul
@@ -60,7 +60,7 @@ planung/                    Konzeptionelle Vorgaben (von Isaak geprüft/korrigie
 - **Offizielle Kanton-Daten** (`data/handlungziele-kanton.csv`) sind für alle Rollen
   unveränderlich.
 - **Kein IPA-Tracker** – die IPA organisiert der Lernende selbst.
-- **Dark Mode ist der Grundmodus** der App (siehe `design.md`).
+- **Helle Mint-Palette** ist der Grundmodus der App (siehe `design.md`).
 
 ## Bekannte offene Punkte
 

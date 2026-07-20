@@ -12,7 +12,7 @@
   box-shadow: var(--sh-md), var(--sh-glow);
 }
 .warn {
-  border-color: rgba(221, 226, 74, 0.4);
+  border-color: var(--fehler-rand);
 }
 
 .head {
