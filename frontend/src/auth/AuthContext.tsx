@@ -8,7 +8,7 @@ import {
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase.ts'
 
-export type Rolle = 'lernende' | 'berufsbildner'
+export type Rolle = 'lernende' | 'teamowner' | 'berufsbildner' | 'admin'
 
 /** Profil-Zeile aus public.benutzer (rolle kann null sein: Entra-Sync ohne Rolle). */
 export type Benutzer = {

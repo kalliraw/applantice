@@ -30,10 +30,14 @@ export function LoginPage() {
       <Card className={styles.card}>
         <div className={styles.brand}>
           <div className={styles.logo}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <rect x="3" y="13" width="4" height="8" rx="1.2" fill="#fff" opacity="0.75" />
-              <rect x="10" y="8" width="4" height="13" rx="1.2" fill="#fff" opacity="0.88" />
-              <rect x="17" y="3" width="4" height="18" rx="1.2" fill="#fff" />
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M8.5 7 4 12l4.5 5M15.5 7 20 12l-4.5 5M13.7 4.5l-3.4 15"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
           <div className={styles.brandText}>

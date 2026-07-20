@@ -12,6 +12,7 @@ import { FaecherPage } from './pages/FaecherPage.tsx'
 import { NotenPage } from './pages/NotenPage.tsx'
 import { BildungsberichtPage } from './pages/BildungsberichtPage.tsx'
 import { TeamRotationPage } from './pages/TeamRotationPage.tsx'
+import { TeamownerPage } from './pages/TeamownerPage.tsx'
 import { EinstellungenPage } from './pages/EinstellungenPage.tsx'
 
 export function App() {
@@ -37,6 +38,7 @@ export function App() {
             <Route path="/bildungsbericht" element={<BildungsberichtPage />} />
             <Route path="/faecher" element={<FaecherPage />} />
             <Route path="/planung" element={<TeamRotationPage />} />
+            <Route path="/mein-team" element={<TeamownerPage />} />
             <Route path="/teams" element={<Navigate to="/planung" replace />} />
             <Route path="/einstellungen" element={<EinstellungenPage />} />
           </Route>

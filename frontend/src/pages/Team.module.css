@@ -639,3 +639,22 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Teamowner-Dashboard ---------- */
+.ownerBlock {
+  margin-bottom: var(--sp-4);
+}
+.ownerAbschnitt {
+  margin-top: var(--sp-4);
+}
+.ownerAbschnitt:first-child {
+  margin-top: 0;
+}
+.ownerAbschnittKopf {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: var(--sp-3);
+}

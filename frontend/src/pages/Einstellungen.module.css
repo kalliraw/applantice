@@ -184,3 +184,99 @@
   color: var(--text-3);
   margin-top: var(--sp-3);
 }
+
+/* ---------- Betreuungs-Übersicht ---------- */
+.betrKopf {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.betrListe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.betrRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2, 10px);
+  background: var(--surface-1, transparent);
+}
+/* Lernende ohne Betreuung deutlich hervorheben. */
+.betrRowLeer {
+  border-color: var(--warn-fg, #b0863a);
+  background: var(--warn-bg, rgba(176, 134, 58, 0.08));
+}
+.betrLern {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+.betrName {
+  font-weight: 600;
+}
+.betrMail {
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.betrChips {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.betrChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 999px;
+  background: var(--accent-bg, rgba(47, 143, 107, 0.12));
+  color: var(--accent-fg, #2f8f6b);
+  border: 1px solid var(--accent-bg, rgba(47, 143, 107, 0.25));
+}
+.betrChipX {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.betrChipX:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+.betrChipX:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.betrAdd {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.betrAdd:hover:not(:disabled) {
+  border-color: var(--accent-fg, #2f8f6b);
+  color: var(--accent-fg, #2f8f6b);
+}

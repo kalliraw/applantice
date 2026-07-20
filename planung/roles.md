@@ -1,78 +1,119 @@
 # Rollen & Berechtigungen
 
-Zwei Rollen. Kein separates Admin-Konzept – der Break-Glass-Login (siehe
-`authconcept.md`) trägt faktisch die Rolle Berufsbildner.
+**Vier Rollen:** Lernende, Teamowner, Berufsbildner, Admin. Die Sicht auf die Daten
+eines Lernenden ist neu **eingeschränkt**: nicht mehr jeder Berufsbildner sieht alle
+Lernenden. Wer welchen Lernenden sieht, ergibt sich aus einer expliziten
+**Betreuungs-Beziehung** (Berufsbildner ↔ Lernende) bzw. der **Team-Verantwortung**
+(Teamowner). Der Admin sieht alle.
+
+Zugriffskontrolle bleibt ausschliesslich in Postgres (Row Level Security, siehe
+`techstack.md`), nicht im Frontend.
+
+## Übersicht: wer sieht welche Lernenden
+
+| Rolle          | sichtbare Lernenden-Daten                                   |
+| -------------- | ----------------------------------------------------------- |
+| Lernende       | nur die eigenen                                             |
+| Teamowner      | keine personenbezogenen Daten – nur Team-Ziele + Timeline   |
+| Berufsbildner  | nur die ihm **zugewiesenen** (Betreuung)                    |
+| Admin          | **alle**                                                    |
 
 ## Lernende
 
+Unverändert:
+
 - Sehen und bearbeiten ausschliesslich ihre **eigenen** Daten.
 - Erfassen Selbsteinschätzungen pro Leistungsziel (3-Stufen-Raster Erklärt/Geübt/
-  Selbstständig, siehe `featurematrix.md`) – für sich selbst, nicht für andere.
+  Selbstständig) – für sich selbst, nicht für andere.
 - Erfassen ihre eigenen Noten (Notenrechner).
-- **Lesen** ihre eigenen Bildungsberichte (Semester- und Sonderberichte), können sie aber
-  **nicht selbst erstellen oder bearbeiten** – Bildungsberichte verfasst der Berufsbildner
-  (Entscheidung Isaak).
-- Sehen ihre eigene Standortbestimmung/Jahresübersicht.
-- Können **keine** Handlungskompetenzen bearbeiten oder hinzufügen (weder offizielle
-  noch betriebliche) – nur einschätzen.
-- Sehen die Handlungskompetenzen/-ziele des Kantons (schreibgeschützt) sowie
-  betriebliche Kompetenzen, die der Berufsbildner hinzugefügt hat.
-- Sehen ihre eigene Team-Zuteilung über die Ausbildungszeit sowie den Status ihrer
-  Handlungskompetenzen (offen/angefangen/erledigt). Dieser Status wird **automatisch aus
-  ihrer eigenen Selbsteinschätzung abgeleitet** (erledigt = alle zugehörigen
-  Leistungsziele auf Stufe "selbstständig") – niemand setzt ihn manuell (siehe
-  `featurematrix.md`, Feature "Handlungskompetenz-Status").
+- **Lesen** ihre eigenen Bildungsberichte, können sie aber **nicht selbst erstellen
+  oder bearbeiten** – das macht der betreuende Berufsbildner.
+- Können **keine** Handlungskompetenzen bearbeiten/hinzufügen – nur einschätzen.
+- Sehen die Kanton- und betrieblichen Handlungskompetenzen/-ziele (schreibgeschützt).
+- Sehen ihre eigene Team-Zuteilung sowie den Status ihrer Handlungskompetenzen
+  (offen/angefangen/erledigt). Dieser Status wird **automatisch aus ihrer eigenen
+  Selbsteinschätzung abgeleitet** (erledigt = alle zugehörigen Leistungsziele auf
+  Stufe "selbstständig") – niemand setzt ihn manuell.
 
-## Berufsbildner
+## Teamowner (neu)
 
-- Sehen **alle** Lernenden (aktuelle und historische), nicht nur die eigenen Daten.
-- Können **betriebliche Handlungskompetenzen** hinzufügen, bearbeiten und löschen
-  (z.B. betriebsspezifische Tools/Prozesse) – klar getrennt von den offiziellen
-  Kanton-Daten aus `data/handlungziele-kanton.csv`, die für niemanden editierbar sind.
-- Können Selbsteinschätzungen der Lernenden reviewen/gegenzeichnen (entspricht dem Feld
-  "Überprüft BB/FV" im offiziellen Lernzielkatalog).
-- Verwalten Rollen-Zuordnungen (E-Mail → Rolle) für neue Lernende.
-- Planen die **Team-Rotation** im Zeitstrahl: weisen jedem Lernenden zu, in welchem
-  Team/welcher Abteilung er sich in welchem Zeitraum (Kalenderwochen) der Ausbildung
-  befindet (Teams werden aus einer Entra-ID-Gruppe gesynct, UPN als Identifier – siehe
-  `authconcept.md`), legen pro Team eine **verantwortliche Person** fest, weisen pro Team
-  die dort zu erreichenden **Leistungsziele** zu (pro Leistungsziel) und planen, in
-  welchem **Semester** welches **Modul** in der Schule unterrichtet wird (global für alle
-  Lernenden). Lernende sehen ihren eigenen Zeitstrahl (Rotation, Module, verlinkte
-  Berichte) und dürfen die **Modul→Semester-Planung mitpflegen** (globaler Schulplan, nur
-  die Semester-Zuordnung – abgesichert über eine SECURITY-DEFINER-Funktion), können aber
-  **Team-Zuteilungen nicht bearbeiten**.
-- Der Erledigt-Status einer Handlungskompetenz wird **automatisch aus der
-  Selbsteinschätzung der Lernenden abgeleitet** (erledigt = alle zugehörigen
-  Leistungsziele auf Stufe "selbstständig") und **nicht mehr manuell** vom Berufsbildner
-  gesetzt (Entscheidung Isaak, ersetzt die frühere manuelle Markierung). Der Berufsbildner
-  definiert stattdessen bei betrieblichen Kompetenzen die zugehörigen Leistungsziele und
-  sieht den abgeleiteten Fortschritt pro Lernendem.
-- Verwalten die **Fächerliste** für den Notenrechner (anlegen, bearbeiten, inaktiv
-  setzen) inkl. Zuordnung zu Notenkomponente, Kontext (EFZ/BM) und Gewichtung – siehe
-  Feature "Fächer-Verwaltung" in `featurematrix.md`. Lernende sehen die Fächer nur,
-  können sie nicht bearbeiten.
-- Verwalten die SMTP-Einstellungen (siehe `mailmodule.md`).
-- **Erstellen und verwalten die Bildungsberichte** der Lernenden – sowohl den Pflicht-
-  Semesterbericht (Art. 13 BiVo) als auch anlassbezogene Sonderberichte. Ein Bericht kann
-  als Entwurf gespeichert und später abgeschlossen werden; **abgeschlossene Berichte sind
-  unveränderlich** (Historie). Jeder Bericht hält den Ausbildungsstand automatisch fest
-  (erledigte Kompetenzen, Leistungsziel-Fortschritt, aktuelle Vornote) – siehe Feature
-  "Bildungsbericht" in `featurematrix.md`.
-- Erstellen/moderieren die Standortbestimmung im jährlichen Gespräch, ergänzen eigene
-  Einschätzung neben der Selbsteinschätzung der Lernenden.
+Die **verantwortliche Person eines Teams** (`team.verantwortlich_benutzer_id`) erhält
+mit dieser Rolle einen eigenen, **stark eingeschränkten Lese-Zugang**. Zweck: dafür
+sorgen, dass die dem eigenen Team zugewiesenen Ziele erreicht werden – **ohne** Einblick
+in die sensiblen Daten der Lernenden.
 
-## Was für beide Rollen gleich gilt
+Ein Teamowner:
 
-- Zugriffskontrolle ausschliesslich über Row Level Security in Postgres (siehe
-  `techstack.md`), nicht im Frontend.
+- Kann für **mehrere Teams** verantwortlich sein; sieht dann alle seine Teams.
+- Sieht **ausschliesslich**:
+  - die seinem/seinen Team(s) zugewiesenen **Handlungskompetenzen und Leistungsziele**
+    (`team_kompetenz`, `team_leistungsziel`),
+  - eine **Timeline seines Teams**: welcher Lernende in welchem Zeitraum (Kalenderwochen)
+    bei ihm im Team ist (`team_zuteilung` der eigenen Teams, inkl. Namen der Lernenden).
+- Sieht **NICHT**: Noten, Fächer/Module-Noten, Bildungsberichte, Selbsteinschätzungen,
+  den individuellen Kompetenz-Fortschritt einzelner Lernender, Einstellungen, andere
+  Teams oder andere Lernende.
+- **Setzt nichts** und bearbeitet nichts – reine Ansicht. Der Kompetenz-Status bleibt
+  wie bei allen anderen automatisch aus der Selbsteinschätzung der Lernenden abgeleitet.
+
+Die Rolle ist bewusst zusätzlich zur Team-Verantwortung: `verantwortlich_benutzer_id`
+verknüpft eine Person mit einem Team; erst die Rolle `teamowner` gibt ihr den Login-Zugang
+zum Team-Dashboard. Eine Person kann Teamowner sein, ohne Berufsbildner zu sein.
+
+## Berufsbildner (neu: auf die eigenen Lernenden eingeschränkt)
+
+Wie bisher volle fachliche Sicht **und Schreibrechte** – aber nur noch für die ihm über
+die **Betreuungs-Beziehung** zugewiesenen Lernenden (siehe unten). Er:
+
+- Sieht die **personenbezogenen Daten** (Selbsteinschätzungen, Noten,
+  Leistungsbeurteilungen, Bildungsberichte, Kompetenz-Status, Team-Zuteilungen)
+  **nur der ihm zugewiesenen** Lernenden.
+- **Erstellt und verwaltet die Bildungsberichte** seiner Lernenden (Semester- und
+  Sonderberichte; abgeschlossene Berichte sind unveränderlich).
+- Reviewt/gegenzeichnet Selbsteinschätzungen seiner Lernenden.
+- Erstellt/moderiert die Standortbestimmung seiner Lernenden.
+- Verwaltet weiterhin die **globale Konfiguration** (kein Lernenden-Bezug, daher nicht
+  eingeschränkt): betriebliche Handlungskompetenzen, Fächerliste/Notenkomponenten,
+  Teams + Team-Ziele + Team-Rotation, Modul→Semester-Planung, Benutzer-/Rollen-Zuweisung,
+  Benachrichtigungen. (Entscheidung Isaak: Admin **und** Berufsbildner teilen sich die
+  Verwaltung.)
+- Sieht die **Namen** aller Lernenden (für Team-Planung und Betreuungs-Zuweisung nötig),
+  aber nicht deren personenbezogene Fachdaten, solange keine Betreuung besteht.
+
+## Admin (neu)
+
+Wie Berufsbildner, aber **ohne Einschränkung auf zugewiesene Lernende** – sieht und
+verwaltet **alle** Lernenden. Fachlich der "Super-Berufsbildner"; gedacht für die
+ausbildungsverantwortliche Person und den Break-Glass-Zugang.
+
+- Der **Break-Glass-Login** (`ausbildungsplan-admin@swisstph.ch`, lokal, siehe
+  `authconcept.md`) trägt die Rolle `admin` und ist der Bootstrap: nur ein Admin kann
+  weitere Admins/Rollen und die Betreuungs-Zuweisungen vergeben.
+
+## Betreuungs-Beziehung (neu): Berufsbildner ↔ Lernende
+
+Explizite Tabelle `betreuung` verknüpft einen Berufsbildner mit den von ihm betreuten
+Lernenden:
+
+- **Mehrere Berufsbildner pro Lernendem** möglich (und ein Berufsbildner betreut mehrere
+  Lernende).
+- **Historisiert** (`von_datum`, `bis_datum`): eine beendete Betreuung wird nicht gelöscht,
+  sondern mit `bis_datum` abgeschlossen – im Einklang mit der Leitplanke "Verlaufsdaten
+  nie überschreiben". Ein Berufsbildner sieht die Fachdaten eines Lernenden, sobald eine
+  Betreuung begonnen hat (auch abgeschlossene bleiben sichtbar – z.B. für früher
+  verfasste Berichte).
+- Verwaltet wird die Zuweisung von **Admin und Berufsbildner** (Einstellungen > Betreuung).
+
+## Was für alle Rollen gleich gilt
+
+- Zugriffskontrolle ausschliesslich über Row Level Security in Postgres.
 - Offizielle Kanton-Handlungskompetenzen/-ziele sind für **alle** Rollen
-  schreibgeschützt, unabhängig von der Rolle – sie ändern sich nur durch eine neue
-  Migration/Seed-Aktualisierung.
+  schreibgeschützt – sie ändern sich nur durch eine neue Migration/Seed-Aktualisierung.
+- Wer **keine** Rolle hat (`rolle IS NULL`, z.B. frisch per Entra-Sync angelegt), sieht
+  faktisch nichts – RLS verweigert alles, bis ein Admin/Berufsbildner eine Rolle vergibt.
 
 ## Beim Lehrabschluss eines Lernenden
 
-Datensatz nicht löschen (Historie bleibt für Berufsbildner und Nachfolger als Referenz
-sichtbar), sondern als inaktiv markieren. Neuer Lernender erhält einen neuen
-Account-Eintrag (siehe `data/accounts.csv` als Ausgangspunkt, danach Pflege in der App
-durch den Berufsbildner).
+Datensatz nicht löschen (Historie bleibt sichtbar), sondern als inaktiv markieren. Neuer
+Lernender erhält einen neuen Account-Eintrag. Laufende Betreuungen können mit `bis_datum`
+abgeschlossen werden.

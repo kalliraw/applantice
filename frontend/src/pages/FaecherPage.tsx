@@ -31,7 +31,8 @@ const LEER = (kontext: NotenKontext): FormState => ({
 
 export function FaecherPage() {
   const { profil } = useAuth()
-  const istBB = profil?.rolle === 'berufsbildner'
+  // Berufsbildner UND Admin dürfen Fächer pflegen (globale Konfiguration).
+  const istBB = profil?.rolle === 'berufsbildner' || profil?.rolle === 'admin'
   const [faecher, setFaecher] = useState<Fach[]>([])
   const [komponenten, setKomponenten] = useState<Notenkomponente[]>([])
   const [kontext, setKontext] = useState<NotenKontext>('EFZ')

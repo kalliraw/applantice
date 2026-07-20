@@ -8,6 +8,14 @@ export function HomePage() {
 
   const vorname = profil.name.split(' ')[0]
   const rollenlos = profil.rolle === null
+  const rolleLabel =
+    profil.rolle === 'admin'
+      ? 'Admin'
+      : profil.rolle === 'berufsbildner'
+        ? 'Berufsbildner'
+        : profil.rolle === 'teamowner'
+          ? 'Teamowner'
+          : 'Lernende(r)'
 
   const stats: { label: string; wert: string }[] = [
     { label: 'E-Mail', wert: profil.email },
@@ -26,7 +34,7 @@ export function HomePage() {
         description={
           rollenlos
             ? 'Dein Konto ist angelegt.'
-            : `Angemeldet als ${profil.rolle === 'berufsbildner' ? 'Berufsbildner' : 'Lernende(r)'}. Wähle links einen Bereich.`
+            : `Angemeldet als ${rolleLabel}. Wähle links einen Bereich.`
         }
       />
 
