@@ -25,6 +25,7 @@ import {
 } from '../lib/zeitstrahl.ts'
 import { Badge, Button, EmptyState, Modal, PageHeader, Select, Spinner, TextField } from '../ui/index.ts'
 import { LernendeAuswahl } from '../components/LernendeAuswahl.tsx'
+import { sendeMailEreignis } from '../lib/mail.ts'
 import s from './Team.module.css'
 
 const PX_PRO_WOCHE = 13
@@ -570,6 +571,8 @@ function ZieleModal({
     await supabase.from('team_leistungsziel').delete().eq('team_id', team.id)
     const rows = [...sel].map((lzId) => ({ team_id: team.id, leistungsziel_id: lzId }))
     if (rows.length > 0) await supabase.from('team_leistungsziel').insert(rows)
+    // Teamverantwortliche über die (aktualisierten) Ziele informieren – nur wenn welche gesetzt sind.
+    if (sel.size > 0) await sendeMailEreignis('ziel_zugewiesen', team.id)
     setSpeichert(false)
     onGespeichert()
   }
