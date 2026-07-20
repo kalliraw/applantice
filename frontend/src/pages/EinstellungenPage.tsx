@@ -11,8 +11,19 @@ import {
   type EntraKonfig,
   type SyncErgebnis,
 } from '../lib/entra.ts'
-import { Badge, Button, Card, EmptyState, Modal, PageHeader, Select, Spinner, TextField } from '../ui/index.ts'
+import { sendeMailEreignis } from '../lib/mail.ts'
+import { Badge, Button, Card, EmptyState, Modal, PageHeader, Select, Spinner, Tabs, TextField } from '../ui/index.ts'
 import s from './Einstellungen.module.css'
+
+// Mail-Typen für die Benachrichtigungs-Tab (müssen den mailer-Typen entsprechen).
+const BENACHR_TYPEN: { typ: string; label: string; desc: string }[] = [
+  { typ: 'rolle_zugewiesen', label: 'Zugang freigeschaltet', desc: 'Mail an die Person, wenn eine Rolle vergeben wird (mit Link zum Tool).' },
+  { typ: 'bericht_abgeschlossen', label: 'Bildungsbericht abgeschlossen', desc: 'Bericht als PDF an den abschliessenden Berufsbildner.' },
+  { typ: 'ziel_zugewiesen', label: 'Ziele fürs Team', desc: 'Info an die Teamverantwortlichen, wenn Leistungsziele zugewiesen werden.' },
+  { typ: 'teamwechsel', label: 'Teamwechsel steht an', desc: 'Reminder an Teamverantwortliche und Lernende (nur bei aktivem Scheduler).' },
+  { typ: 'note_fehlt', label: 'Fehlende Noten', desc: 'Reminder an Lernende: abgeschlossenes Modul ohne Note (nur bei aktivem Scheduler).' },
+  { typ: 'semesterbericht_faellig', label: 'Semesterbericht überfällig', desc: 'Reminder an Berufsbildner (nur bei aktivem Scheduler).' },
+]
 
 type EditState = {
   id: string | null // null = neuer Benutzer
@@ -28,7 +39,9 @@ export function EinstellungenPage() {
   const { profil } = useAuth()
   const istBB = profil?.rolle === 'berufsbildner'
 
+  const [tab, setTab] = useState<'benutzer' | 'benachr'>('benutzer')
   const [benutzer, setBenutzer] = useState<Benutzer[]>([])
+  const [benachr, setBenachr] = useState<Record<string, boolean>>({})
   const [ladt, setLadt] = useState(true)
   const [edit, setEdit] = useState<EditState | null>(null)
   const [speichert, setSpeichert] = useState(false)
@@ -54,8 +67,21 @@ export function EinstellungenPage() {
     setBenutzer((data as Benutzer[]) ?? [])
     setLadt(false)
   }
+  async function ladeBenachr() {
+    const { data } = await supabase.from('benachrichtigung_einstellung').select('typ, aktiv')
+    const m: Record<string, boolean> = {}
+    for (const r of (data as { typ: string; aktiv: boolean }[]) ?? []) m[r.typ] = r.aktiv
+    setBenachr(m)
+  }
+  async function toggleBenachr(typ: string, aktiv: boolean) {
+    setBenachr((c) => ({ ...c, [typ]: aktiv }))
+    await supabase
+      .from('benachrichtigung_einstellung')
+      .upsert({ typ, aktiv, aktualisiert_von: profil?.id ?? null, aktualisiert_am: new Date().toISOString() }, { onConflict: 'typ' })
+  }
   useEffect(() => {
     void laden()
+    void ladeBenachr()
     void holeProviderToken().then((t) => setTokenDa(Boolean(t)))
   }, [])
 
@@ -136,11 +162,21 @@ export function EinstellungenPage() {
       ausbildungsstart: istLernende ? edit.ausbildungsstart || null : null,
       macht_bm: istLernende ? edit.macht_bm : false,
     }
+    const vorherRolle = edit.id ? benutzer.find((b) => b.id === edit.id)?.rolle ?? null : null
+    let benutzerId = edit.id
     if (edit.id) {
       await supabase.from('benutzer').update(payload).eq('id', edit.id)
     } else {
-      await supabase.from('benutzer').insert({ ...payload, email: edit.email.trim(), auth_typ: 'entra_id' })
+      const { data: ins } = await supabase
+        .from('benutzer')
+        .insert({ ...payload, email: edit.email.trim(), auth_typ: 'entra_id' })
+        .select('id')
+        .single()
+      benutzerId = (ins as { id: string } | null)?.id ?? null
     }
+    // Zugangs-Mail nur bei NEU vergebener Rolle (vorher keine bzw. neuer Benutzer mit Rolle).
+    const rolleNeuVergeben = edit.rolle !== '' && (edit.id ? vorherRolle === null : true)
+    if (rolleNeuVergeben && benutzerId) await sendeMailEreignis('rolle_zugewiesen', benutzerId)
     setSpeichert(false)
     setEdit(null)
     void laden()
@@ -186,11 +222,22 @@ export function EinstellungenPage() {
     <div>
       <PageHeader
         eyebrow="Verwaltung"
-        title="Einstellungen · Benutzer"
-        description="Benutzer verwalten und Rollen zuweisen. Neue Konten (per Entra-Login oder Sync) sind zunächst ohne Rolle und haben keinen Zugriff, bis hier eine Rolle vergeben wird."
-        actions={<Button variant="primary" onClick={neu}>+ Benutzer</Button>}
+        title="Einstellungen"
+        description="Benutzer & Rollen verwalten und Benachrichtigungen steuern."
+        actions={tab === 'benutzer' ? <Button variant="primary" onClick={neu}>+ Benutzer</Button> : undefined}
       />
 
+      <Tabs
+        tabs={[
+          { id: 'benutzer', label: 'Benutzerverwaltung' },
+          { id: 'benachr', label: 'Benachrichtigungen' },
+        ]}
+        active={tab}
+        onChange={(id) => setTab(id as 'benutzer' | 'benachr')}
+      />
+
+      {tab === 'benutzer' && (
+      <div className={s.tabInhalt}>
       {/* ---------- Entra-Sync ---------- */}
       <Card title="Benutzer aus Entra ID synchronisieren" className={s.syncCard}>
         <p className={`muted ${s.syncLead}`}>
@@ -341,6 +388,35 @@ export function EinstellungenPage() {
           </tbody>
         </table>
       </div>
+      </div>
+      )}
+
+      {tab === 'benachr' && (
+        <div className={s.tabInhalt}>
+          <Card title="Benachrichtigungen">
+            <p className={`muted ${s.syncLead}`}>
+              Pro Ereignis festlegen, ob eine Mail versendet wird – Änderungen greifen sofort.
+              Reminder (Noten, Semesterbericht, Teamwechsel) laufen zusätzlich nur, wenn der
+              Scheduler serverseitig aktiviert ist.
+            </p>
+            <div className={s.benachrListe}>
+              {BENACHR_TYPEN.map((t) => {
+                const an = benachr[t.typ] ?? true
+                return (
+                  <label key={t.typ} className={s.benachrRow}>
+                    <input type="checkbox" checked={an} onChange={(e) => void toggleBenachr(t.typ, e.target.checked)} />
+                    <span className={s.benachrText}>
+                      <span className={s.benachrLabel}>{t.label}</span>
+                      <span className={s.benachrDesc}>{t.desc}</span>
+                    </span>
+                    <Badge tone={an ? 'accent' : 'neutral'}>{an ? 'an' : 'aus'}</Badge>
+                  </label>
+                )
+              })}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {edit && (
         <Modal

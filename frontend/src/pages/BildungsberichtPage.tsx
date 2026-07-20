@@ -12,6 +12,8 @@ import type {
 import { berechneNotenstand, rundeAufZehntel } from '../lib/noten.ts'
 import { Badge, Button, Card, EmptyState, Modal, PageHeader, Select, Spinner, Textarea } from '../ui/index.ts'
 import { LernendeAuswahl } from '../components/LernendeAuswahl.tsx'
+import { sendeMailEreignis } from '../lib/mail.ts'
+import { berichtPdfBase64 } from '../lib/berichtPdf.ts'
 import s from './Bildungsbericht.module.css'
 
 // Feldkatalog je Berichtstyp -------------------------------------------------
@@ -36,6 +38,32 @@ const TYP_LABEL: Record<BerichtTyp, string> = {
 }
 
 const fmtNote = (v: number | null | undefined) => (v == null ? '—' : v.toFixed(1))
+
+// Beim Abschliessen: Bericht als PDF an den abschliessenden Berufsbildner mailen
+// (Empfänger-Auflösung macht der mailer via erfasst_von). Best-effort.
+async function sendeBerichtAbgeschlossen(args: {
+  berichtId: string
+  typ: BerichtTyp
+  semester: number | null
+  datum: string
+  lernendeName: string
+  inhalt: Record<string, string>
+  kennzahlen: Partial<BerichtKennzahlen>
+}) {
+  try {
+    const pdfBase64 = berichtPdfBase64({
+      typLabel: TYP_LABEL[args.typ],
+      semester: args.semester,
+      datum: args.datum,
+      lernendeName: args.lernendeName,
+      felder: felderFuer(args.typ).map((f) => ({ label: f.label, text: args.inhalt[f.key] ?? '' })),
+      kennzahlen: args.kennzahlen,
+    })
+    await sendeMailEreignis('bericht_abgeschlossen', args.berichtId, { pdfBase64 })
+  } catch (e) {
+    console.warn('[mail] Bericht-PDF/Versand fehlgeschlagen:', (e as Error).message)
+  }
+}
 
 // Aktuellen Ausbildungsstand laden (erledigte Kompetenzen, LZ-Fortschritt,
 // Vornote) – wird beim Erstellen/Abschliessen in den Bericht eingefroren.
@@ -264,6 +292,15 @@ export function BildungsberichtPage() {
       .from('bildungsbericht')
       .update({ status: 'abgeschlossen', kennzahlen })
       .eq('id', b.id)
+    await sendeBerichtAbgeschlossen({
+      berichtId: b.id,
+      typ: b.typ,
+      semester: b.semester,
+      datum: b.datum,
+      lernendeName: aktiv?.name ?? '',
+      inhalt: (b.inhalt ?? {}) as Record<string, string>,
+      kennzahlen,
+    })
     setBusy(false)
     setAbschluss(null)
     void laden()
@@ -351,6 +388,7 @@ export function BildungsberichtPage() {
           benutzerId={aktivId}
           machtBm={!!aktiv?.macht_bm}
           erfasstVon={profil?.id ?? null}
+          lernendeName={aktiv?.name ?? ''}
           bestehend={modal.bestehend}
           onClose={() => setModal(null)}
           onGespeichert={() => {
@@ -386,6 +424,7 @@ function BerichtModal({
   benutzerId,
   machtBm,
   erfasstVon,
+  lernendeName,
   bestehend,
   onClose,
   onGespeichert,
@@ -393,6 +432,7 @@ function BerichtModal({
   benutzerId: string
   machtBm: boolean
   erfasstVon: string | null
+  lernendeName: string
   bestehend: Bildungsbericht | null
   onClose: () => void
   onGespeichert: () => void
@@ -429,10 +469,24 @@ function BerichtModal({
       kennzahlen,
       erfasst_von: erfasstVon,
     }
+    const wirdAbgeschlossen = status === 'abgeschlossen' && (!bestehend || bestehend.status === 'entwurf')
+    let berichtId = bestehend?.id ?? null
     if (bestehend) {
       await supabase.from('bildungsbericht').update(zeile).eq('id', bestehend.id)
     } else {
-      await supabase.from('bildungsbericht').insert(zeile)
+      const { data: ins } = await supabase.from('bildungsbericht').insert(zeile).select('id').single()
+      berichtId = (ins as { id: string } | null)?.id ?? null
+    }
+    if (wirdAbgeschlossen && berichtId) {
+      await sendeBerichtAbgeschlossen({
+        berichtId,
+        typ,
+        semester: typ === 'semester' ? Number(semester) : null,
+        datum: bestehend?.datum ?? new Date().toISOString().slice(0, 10),
+        lernendeName,
+        inhalt,
+        kennzahlen,
+      })
     }
     setSpeichert(false)
     onGespeichert()

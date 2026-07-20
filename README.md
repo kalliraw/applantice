@@ -77,6 +77,63 @@ Dieselben `supabase/migrations/*.sql` und `supabase/seed.sql` werden gegen die
 produktive Datenbank angewandt. Ziel-Domain: `ict-apprentice.swisstph.ch`.
 Details und Reihenfolge: [`supabase/README.md`](supabase/README.md).
 
+## Mail-Versand (Microsoft Graph, App-only, RBAC for Applications)
+
+Benachrichtigungen werden über **Microsoft Graph** aus einer Shared-Mailbox versendet –
+**kein SMTP** (SMTP AUTH / Basic Auth ist bei Microsoft abgekündigt). Least Privilege:
+eine **eigene** App-Registration (getrennt vom SSO) darf per **RBAC for Applications**
+ausschliesslich **eine** Mailbox bespielen. Die `Mail.Send`-Berechtigung wird **nicht**
+in Entra consented, sondern allein über Exchange-RBAC vergeben und dort auf die Mailbox
+begrenzt – siehe [`planung/authconcept.md`](planung/authconcept.md).
+
+### Einmalige Einrichtung (Admin)
+
+**1. App-Registration** (entra.microsoft.com → App registrations → New registration):
+Single tenant, **keine** Redirect-URI. Client-Secret erzeugen. **Keine** Graph-API-
+Permission `Mail.Send` hinzufügen und **kein** Admin-Consent (ein tenant-weiter Consent
+würde die Mailbox-Einschränkung aushebeln → Union). `Application (client) ID`,
+`Directory (tenant) ID` sowie die **Enterprise-Application → Object ID** notieren
+(Letztere ist die `ObjectId` unten – nicht die Object ID der App-Registration).
+
+**2. Exchange Online RBAC** (`Connect-ExchangeOnline`, Rolle *Organization Management*
+bzw. *Exchange Administrator*):
+
+```powershell
+# Shared Mailbox (keine Lizenz nötig), falls noch nicht vorhanden
+New-Mailbox -Shared -Name "Ausbildungsplan noreply" -PrimarySmtpAddress <SENDER>
+
+# Exchange-Pointer auf die Entra-App
+New-ServicePrincipal -AppId <CLIENT_ID> -ObjectId <ENTERPRISE_APP_OBJECT_ID> -DisplayName "Ausbildungsplan Mail-Sender"
+
+# Resource-Scope = genau diese eine Mailbox
+New-ManagementScope -Name "Ausbildungsplan-noreply" -RecipientRestrictionFilter "PrimarySmtpAddress -eq '<SENDER>'"
+
+# Rolle 'Application Mail.Send', auf den Scope begrenzt
+New-ManagementRoleAssignment -Name "Ausbildungsplan-MailSend" -App <ENTERPRISE_APP_OBJECT_ID> -Role "Application Mail.Send" -CustomResourceScope "Ausbildungsplan-noreply"
+
+# Verifizieren (umgeht den Cache): erwartet True für <SENDER>, False für alle anderen
+Test-ServicePrincipalAuthorization -Identity <ENTERPRISE_APP_OBJECT_ID> -Resource <SENDER> | ft
+```
+
+Für **mehrere** Absender später: statt `PrimarySmtpAddress -eq …` eine mail-enabled
+Security Group und `-RecipientRestrictionFilter "MemberOfGroup -eq '<DN>'"` (DN via
+`Get-Group`). Änderungen greifen live nach **30 Min–2 h** (Berechtigungs-Cache); das
+`Test-…`-Cmdlet umgeht ihn.
+
+**3. Konfiguration** (`.env`, siehe [`.env.example`](.env.example); Secret **nie** committen):
+
+```
+GRAPH_MAIL_TENANT_ID=<tenant-id>
+GRAPH_MAIL_CLIENT_ID=<client-id>
+GRAPH_MAIL_CLIENT_SECRET=<secret>
+GRAPH_MAIL_SENDER=<shared-mailbox-adresse>
+```
+
+Der Mail-Sender holt sein Token per Client-Credentials
+(`scope=https://graph.microsoft.com/.default`) und ruft `POST /users/{GRAPH_MAIL_SENDER}/sendMail`.
+Autorisiert wird über Exchange-RBAC (nicht über Entra-Rollen); das Token trägt daher
+keinen `Mail.Send`-Rollen-Claim.
+
 ## Wichtige Leitplanken (Kurzfassung)
 
 - Kein Hartkodieren von Notengewichten oder Fächern – alles Daten (Tabellen).

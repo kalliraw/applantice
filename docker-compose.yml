@@ -129,6 +129,40 @@ services:
       PGRST_DB_USE_LEGACY_GUCS: "false"
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
 
+  # ---------- Mail-Sender (Microsoft Graph, App-only) + Reminder-Scheduler ----------
+  mailer:
+    build:
+      context: ./mailer
+      dockerfile: ../docker/mailer/Dockerfile
+      args:
+        NODE_VERSION: ${NODE_VERSION:-20}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Graph-App (App-only, RBAC-scoped auf GRAPH_MAIL_SENDER). Secret via .env.
+      GRAPH_MAIL_TENANT_ID: ${GRAPH_MAIL_TENANT_ID:-}
+      GRAPH_MAIL_CLIENT_ID: ${GRAPH_MAIL_CLIENT_ID:-}
+      GRAPH_MAIL_CLIENT_SECRET: ${GRAPH_MAIL_CLIENT_SECRET:-}
+      GRAPH_MAIL_SENDER: ${GRAPH_MAIL_SENDER:-}
+      # Zum Verifizieren der Supabase-JWTs eingehender /send-Aufrufe (gleiches Secret wie GoTrue/PostgREST).
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      # Tool-URL für Links in den Mails (pro Umgebung verschieden).
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      # Direkte DB-Verbindung (Backend, umgeht RLS) für Reminder-Scans + mail_log.
+      PGHOST: db
+      PGUSER: supabase_admin
+      PGPASSWORD: *pg_password
+      PGDATABASE: ${POSTGRES_DB:-postgres}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_SCHEDULER: ${MAIL_SCHEDULER:-true}
+      MAIL_TEAMWECHSEL_VORLAUF_TAGE: ${MAIL_TEAMWECHSEL_VORLAUF_TAGE:-7}
+      MAIL_RESEND_TAGE: ${MAIL_RESEND_TAGE:-7}
+    volumes:
+      # Templates gemountet -> Pflege ohne Rebuild.
+      - ./mail-templates:/app/mail-templates:ro
+
   # ---------- Frontend (gebaute SPA + Reverse-Proxy für /auth/v1 & /rest/v1) ----------
   web:
     build:
@@ -149,6 +183,8 @@ services:
       auth:
         condition: service_healthy
       rest:
+        condition: service_started
+      mailer:
         condition: service_started
     ports:
       - "${APP_PORT:-8080}:80"
