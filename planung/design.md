@@ -1,62 +1,59 @@
-# Corporate Design (Swiss TPH)
+# Design – Mint-Palette (hell)
 
-**Grundmodus: Dark Mode.** Die App ist grundsätzlich dunkel gehalten (IT-affine
-Zielgruppe). Kontrast wird über die hellen Indigo-Töne geschaffen, nicht über
-Rot/Grün/Ampelfarben. Ausserhalb von Dark Mode + Markenfarben ist das Design bewusst
-offen – Isaak legt sich hier nicht fest. Ein modernes UI-Framework/-Look ist erwünscht;
-siehe die Spannung dazu in `techstack.md` (Abschnitt Frontend), die Claude Code beim
-Bauen auflöst.
+**Grundmodus: Light.** Heller, leicht mint-getönter Hintergrund; **Mint** ist der klare
+Kontrast-/Akzentton für Buttons, Links, aktive Nav-Elemente und Highlights. Kein
+Corporate-Design-Zwang mehr – die frühere Swiss-TPH-Indigo/Dark-Vorgabe ist bewusst
+abgelöst (Entscheidung Isaak). Ampelfarben (Rot/Grün) werden nicht als Gestaltungsmittel
+eingesetzt; für Status genügt die Mint-Sättigung. Ein einzelnes funktionales **Amber**
+ist für Warnungen erlaubt (ausserhalb der Mint-Palette, nur zur Klarheit).
 
-Design-Tokens als CSS-Variablen anlegen, nicht einzelne Hex-Werte im Code verstreuen.
+Design-Tokens als CSS-Variablen (`frontend/src/styles/tokens.css`), keine Hex-Werte im
+Code verstreuen.
+
+## Palette
 
 ```css
 :root {
-  /* Primärfarbe: Indigo – im Dark Mode die Kontrast-/Highlight-Farbe schlechthin:
-     Headings, aktive Nav-Elemente, zentrale Highlights */
-  --farbe-indigo: #432ca1;
-  --farbe-indigo-60: #8e80c6;   /* helle Highlights, aktive Icons, Chart-Akzente auf Dunkel */
-  --farbe-indigo-40: #b3aad9;
-  --farbe-indigo-20: #d9d4ec;   /* höchster Kontrast auf dunklem Grund: Fliesstext-Highlights */
+  /* Hintergrund & Oberflächen */
+  --bg:        #f5f8f7;   /* Section – App-Canvas */
+  --surface:   #ffffff;   /* Page/Card – Karten, Panels */
+  --surface-2: #eaf0ee;   /* Card/Panel-Ton – zarte Füllung, Inputs, Hover */
+  --surface-3: #dce4e1;   /* stärkerer Hover */
+  --border:    #dce4e1;   /* Border / Divider */
 
-  /* Sekundärfarben */
-  --farbe-weiss: #ffffff;        /* Fliesstext auf dunklem Grund */
-  --farbe-schwarz: #000000;      /* Basis für dunkle Flächen/Hintergründe im Dark Mode */
-  --farbe-schwarz-60: #666666;   /* Sekundärtext auf Dunkel: Captions, Footnotes */
-  --farbe-schwarz-20: #cccccc;   /* dezente Trenner/Icons auf Dunkel */
+  /* Mint – Kontrastfarbe */
+  --mint-100:  #e3f6f1;   /* zarte Flächen (accent-soft) */
+  --mint-300:  #8fe3d2;   /* Highlights */
+  --mint-500:  #2fc3a6;   /* Primary (Buttons, Akzent) */
+  --mint-700:  #1b8f79;   /* Hover / Links */
+  --mint-900:  #0f5a4c;   /* Text/Icons auf Mint */
 
-  /* Akzentfarbe: Gelb – in kleinen Dosen, wirkt auf dunklem Grund besonders stark */
-  --farbe-gelb: #dde24a;
-  --farbe-gelb-60: #eaed93;      /* kleine Highlights, Infografik-Akzente */
-  --farbe-gelb-20: #f8f9da;      /* nur für seltene helle Flächen auf Dunkel */
+  /* Text */
+  --text:   #16211f;      /* Überschrift / Primary */
+  --text-2: #54615e;      /* Fliesstext / Secondary */
+  --text-3: #93a19d;      /* Hinweistext / Muted */
 }
 ```
 
-Für konkrete dunkle Flächen-Abstufungen (App-Hintergrund vs. erhöhte Panels/Cards vs.
-Hover-Zustände) reichen `--farbe-schwarz` allein nicht – hier braucht es zusätzliche,
-leicht indigo-getönte Dunkelgrau-Stufen (z.B. `#0d0b14`, `#171325`), die Isaak nicht
-festgelegt hat. Claude Code kann diese beim Bauen frei ergänzen, solange sie sich klar
-von den Marken-Tokens oben unterscheiden lassen (z.B. Präfix `--flaeche-*` statt
-`--farbe-*`).
-
 ## Anwendungsregeln
 
-- **Dark Mode ist der Grundmodus** der App – dunkler Hintergrund, keine helle
-  Standardansicht.
-- **Indigo** (`--farbe-indigo` und helle Varianten) schafft auf dem dunklen Grund den
-  Kontrast: Headings, Navigations-Branding, zentrale CTAs/Highlights.
-- **Weiss/helles Schwarz** (`--farbe-weiss`, `--farbe-schwarz-20`) für Fliesstext auf
-  dunklem Grund – hält Text lesbar und lässt Indigo seine Wirkung als Highlight-Farbe
-  behalten.
-- **Gelb** nur für kleine Akzente (z.B. Status-Badges, kleine Hervorhebungen), nie
-  flächig einsetzen – wirkt auf Dunkel besonders stark, daher sparsam verwenden.
+- **Heller Hintergrund** (`--bg`), **weisse Karten** (`--surface`) mit dünnem Border –
+  ruhig, nicht überladen.
+- **Mint** als Akzent: Primary-Button = Verlauf Mint 500 → 700 mit weisser Schrift;
+  Sekundär-Button = weiss mit Mint-Text/-Border; Links & aktive Icons in Mint 700
+  (`--accent-bright`), damit der Kontrast auf Hell stimmt. Mint 500 wird für Flächen/Fills
+  genutzt, Mint 700/900 für Text auf Hell.
+- **Text**: Überschrift `--text`, Fliesstext `--text-2`, Hinweise `--text-3`.
+- **Warnung/Unvollständig** (z.B. Modul-Gewichtssumme ≠ 100 %, „ohne Rolle", lokaler
+  Break-Glass-Account): funktionales **Amber** (`--gelb`/`--fehler-*`), sparsam.
+- **Erledigt**: gefülltes Mint (`--erledigt-*`) – Signal über die Füllung, nicht über eine
+  zweite Farbe.
 
 ## Anwendung auf spezifische UI-Elemente
 
-- Badge "Kanton – offiziell" (schreibgeschützte Handlungskompetenzen) und Badge
-  "Betrieblich" (vom Berufsbildner hinzugefügt) sollen visuell klar unterscheidbar
-  sein – z.B. Indigo-Ton für offiziell, neutraler Schwarz-20-Hintergrund für
-  betrieblich (siehe `roles.md` für den fachlichen Hintergrund dieser Unterscheidung).
-- Statusanzeigen für das 3-Stufen-Raster (Erklärt/Geübt/Selbstständig, siehe
-  `featurematrix.md`) sollten progressiv unterscheidbar sein (z.B. über Sättigung/Ton
-  von Indigo), nicht über Ampelfarben (Rot/Grün), da Gelb die einzige definierte
-  Akzentfarbe ist und Rot/Grün nicht Teil der Palette sind.
+- Badge „Kanton – offiziell" vs. „Betrieblich": weiterhin klar unterscheidbar – Kanton in
+  Mint-Ton (`--kanton-*`), Betrieblich neutral/grau (`--betrieb-*`).
+- 3-Stufen-Raster (Erklärt/Geübt/Selbstständig): progressiv über **Mint-Sättigung**
+  (`--stufe-1` hell → `--stufe-3` dunkel), keine Ampelfarben.
+- Mail-Templates (`mail-templates/`) verwenden denselben Mint-Akzent (Kopf/Buttons), damit
+  App und Benachrichtigungen konsistent wirken.

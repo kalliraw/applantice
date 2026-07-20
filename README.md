@@ -139,4 +139,4 @@ keinen `Mail.Send`-Rollen-Claim.
 - Kein Hartkodieren von Notengewichten oder Fächern – alles Daten (Tabellen).
 - Verlaufsdaten (Selbsteinschätzung, Noten, Bildungsberichte) werden nie überschrieben.
 - Offizielle Kanton-Daten sind für alle Rollen unveränderlich.
-- Dark Mode ist der Grundmodus.
+- Helle Mint-Palette (Light) ist der Grundmodus.

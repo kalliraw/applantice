@@ -228,6 +228,6 @@
   cursor: pointer;
 }
 .lzDel:hover {
-  background: rgba(190, 60, 70, 0.18);
-  color: #ffd0d0;
+  background: rgba(220, 60, 54, 0.12);
+  color: #b42318;
 }

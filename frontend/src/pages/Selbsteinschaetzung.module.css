@@ -70,17 +70,17 @@
 .achieved1 {
   background: var(--stufe-1);
   border-color: transparent;
-  color: #d9d4ec;
+  color: var(--mint-900);
 }
 .achieved2 {
   background: var(--stufe-2);
   border-color: transparent;
-  color: #fff;
+  color: var(--mint-900);
 }
 .achieved3 {
   background: var(--stufe-3);
   border-color: transparent;
-  color: #14121f;
+  color: #ffffff;
 }
 .stepDate {
   font-size: 0.72rem;

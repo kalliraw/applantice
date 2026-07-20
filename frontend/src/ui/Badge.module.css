@@ -42,7 +42,7 @@
 .warn {
   background: var(--gelb-soft);
   color: var(--gelb);
-  border-color: rgba(221, 226, 74, 0.35);
+  border-color: var(--fehler-rand);
 }
 .erledigt {
   background: var(--erledigt-bg);

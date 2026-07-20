@@ -46,7 +46,7 @@
 .primary {
   color: var(--text-on-accent);
   background: linear-gradient(180deg, var(--accent-solid-1), var(--accent-solid-2));
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: transparent;
   box-shadow: var(--sh-glow);
 }
 .primary:not(:disabled):hover {
@@ -74,12 +74,12 @@
 }
 
 .danger {
-  color: #ffdada;
-  background: rgba(190, 60, 70, 0.16);
-  border-color: rgba(190, 60, 70, 0.4);
+  color: #b42318;
+  background: rgba(220, 60, 54, 0.1);
+  border-color: rgba(220, 60, 54, 0.35);
 }
 .danger:not(:disabled):hover {
-  background: rgba(190, 60, 70, 0.26);
+  background: rgba(220, 60, 54, 0.18);
 }
 
 /* Lade-Spinner */

@@ -36,15 +36,15 @@
   background: linear-gradient(90deg, var(--accent-solid-2), var(--accent-bright));
 }
 .gelb {
-  background: linear-gradient(90deg, #a9ad2e, var(--gelb));
+  background: linear-gradient(90deg, #e0b04a, var(--gelb));
 }
 .marker {
   position: absolute;
   top: -3px;
   bottom: -3px;
   width: 2px;
-  background: var(--farbe-weiss);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  background: var(--text);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
   transform: translateX(-1px);
 }
 .caption {

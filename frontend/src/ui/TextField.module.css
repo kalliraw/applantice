@@ -34,7 +34,7 @@
 }
 
 .inputError {
-  border-color: rgba(221, 226, 74, 0.6);
+  border-color: var(--fehler-rand);
 }
 
 .hint {

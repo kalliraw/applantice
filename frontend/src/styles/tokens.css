@@ -1,75 +1,84 @@
 /*
- * Design-Tokens – Swiss TPH Corporate Design, überarbeitet.
- * Quelle der Markenfarben: planung/design.md (--farbe-* NICHT verändern).
- * Semantische Tokens (Flächen, Text, Accent, Spacing, Radius, Schatten) sind hier
- * definiert – von design.md ausdrücklich Claude Code überlassen, klar getrennt.
+ * Design-Tokens – helle Mint-Palette (siehe planung/design.md).
+ * Kein Corporate-Design-Zwang mehr; Mint als klarer Kontrast-Akzent auf hellem,
+ * leicht mint-getöntem Hintergrund.
  *
- * Dark Mode ist der Grundmodus. Abstufung über Indigo-Sättigung, kein Rot/Grün.
+ * Die --farbe-*-Aliasse bleiben bestehen (werden in einzelnen Komponenten direkt
+ * referenziert), sind aber auf die Mint-Palette bzw. ein funktionales Amber für
+ * Warnungen umgemappt.
  */
 
 :root {
-  /* ================= Markenfarben (design.md, unverändert) ================= */
-  --farbe-indigo: #432ca1;
-  --farbe-indigo-60: #8e80c6;
-  --farbe-indigo-40: #b3aad9;
-  --farbe-indigo-20: #d9d4ec;
-  --farbe-weiss: #ffffff;
-  --farbe-schwarz: #000000;
-  --farbe-gelb: #dde24a;
-  --farbe-gelb-60: #eaed93;
+  color-scheme: light;
 
-  /* ================= Flächen (dunkel, leicht indigo-getönt) ================= */
-  --bg: #0a0912;
-  --bg-glow-1: rgba(67, 44, 161, 0.22); /* Indigo-Schimmer oben links */
-  --bg-glow-2: rgba(67, 44, 161, 0.10);
-  --surface: #141221;         /* Panels / Cards */
-  --surface-2: #1c1930;       /* verschachtelt / Inputs */
-  --surface-3: #262038;       /* Hover */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  /* ================= Palette ================= */
+  --mint-100: #e3f6f1;
+  --mint-300: #8fe3d2;
+  --mint-500: #2fc3a6;   /* Primary */
+  --mint-700: #1b8f79;   /* Hover / Links */
+  --mint-900: #0f5a4c;   /* Text/Icons auf Mint */
+  --farbe-weiss: #ffffff;
+  --farbe-schwarz: #16211f;
+
+  /* Alias-Namen (früher Indigo) -> jetzt Mint, damit Alt-Referenzen weiterlaufen. */
+  --farbe-indigo: #1b8f79;
+  --farbe-indigo-60: #2fc3a6;
+  --farbe-indigo-40: #8fe3d2;
+  --farbe-indigo-20: #b8e6da;
+  /* Warnung -> funktionales Amber (bewusst ausserhalb der Mint-Palette, für Klarheit). */
+  --farbe-gelb: #c07f16;
+  --farbe-gelb-60: #e6c36a;
+
+  /* ================= Flächen (hell, leicht mint-getönt) ================= */
+  --bg: #f5f8f7;               /* Section – App-Canvas */
+  --bg-glow-1: rgba(47, 195, 166, 0.10);
+  --bg-glow-2: rgba(47, 195, 166, 0.05);
+  --surface: #ffffff;          /* Panels / Cards */
+  --surface-2: #eaf0ee;        /* verschachtelt / Inputs / zarte Füllung */
+  --surface-3: #dce4e1;        /* Hover / stärker */
+  --border: #dce4e1;
+  --border-strong: #c6d2cd;
 
   /* ================= Text ================= */
-  --text: #edecf4;
-  --text-2: #a7a1c0;          /* sekundär */
-  --text-3: #6f698a;          /* gedämpft / captions */
+  --text: #16211f;             /* Überschrift */
+  --text-2: #54615e;           /* Fließtext */
+  --text-3: #93a19d;           /* gedämpft / captions */
   --text-on-accent: #ffffff;
 
-  /* ================= Accent (Indigo) ================= */
-  --accent: #8e80c6;          /* Highlights, aktive Icons auf Dunkel */
-  --accent-bright: #9d8dff;   /* helle Interaktion */
-  --accent-solid-1: #5a45c8;  /* Button-Verlauf hell */
-  --accent-solid-2: #43309f;  /* Button-Verlauf dunkel (brand) */
-  --ring: rgba(142, 128, 198, 0.45);
-  --accent-soft: rgba(120, 100, 220, 0.14); /* zarte gefüllte Flächen */
+  /* ================= Accent (Mint) ================= */
+  --accent: #2fc3a6;           /* Primary-Fläche */
+  --accent-bright: #1b8f79;    /* Links / aktive Interaktion (Kontrast auf hell) */
+  --accent-solid-1: #2fc3a6;   /* Button-Verlauf hell */
+  --accent-solid-2: #1b8f79;   /* Button-Verlauf dunkel */
+  --ring: rgba(47, 195, 166, 0.45);
+  --accent-soft: #e3f6f1;      /* zarte gefüllte Flächen (Mint 100) */
 
   /* ================= Status / Akzente ================= */
   --gelb: var(--farbe-gelb);
-  --gelb-soft: rgba(221, 226, 74, 0.16);
+  --gelb-soft: rgba(192, 127, 22, 0.14);
 
-  /* Unvollständig/Warnung – Corporate-Gelb (einzige Akzentfarbe, design.md).
-     z.B. Module mit Gewichtssumme ≠ 100%. Sparsam als Akzent. */
-  --fehler-bg: rgba(221, 226, 74, 0.13);
-  --fehler-rand: rgba(221, 226, 74, 0.5);
-  --fehler-fg: var(--farbe-gelb);
+  /* Unvollständig/Warnung – funktionales Amber. Sparsam als Akzent. */
+  --fehler-bg: rgba(192, 127, 22, 0.12);
+  --fehler-rand: rgba(192, 127, 22, 0.5);
+  --fehler-fg: #a76a0e;
 
-  /* Erledigt – Grün (bewusste Ausnahme von der Nur-Indigo/Gelb-Regel, auf Wunsch:
-     klares „erledigt"-Signal). */
-  --erledigt-bg: rgba(56, 178, 115, 0.16);
-  --erledigt-rand: rgba(72, 196, 132, 0.5);
-  --erledigt-fg: #74e0a6;
+  /* Erledigt – kräftiges Mint (Signal über Füllung). */
+  --erledigt-bg: rgba(47, 195, 166, 0.18);
+  --erledigt-rand: rgba(27, 143, 121, 0.45);
+  --erledigt-fg: #0f5a4c;
 
-  /* 3-Stufen-Raster Selbsteinschätzung (Indigo-Sättigung, kein Ampel) */
-  --stufe-1: #3a3357;         /* Erklärt */
-  --stufe-2: #6151b3;         /* Geübt */
-  --stufe-3: #9d8dff;         /* Selbstständig */
+  /* 3-Stufen-Raster Selbsteinschätzung (Mint-Sättigung, kein Ampel) */
+  --stufe-1: #cbeee5;          /* Erklärt (hell) */
+  --stufe-2: #2fc3a6;          /* Geübt */
+  --stufe-3: #1b8f79;          /* Selbstständig */
 
   /* Kompetenz-Herkunft */
-  --kanton-bg: rgba(90, 69, 200, 0.22);
-  --kanton-fg: var(--farbe-indigo-20);
-  --kanton-ring: rgba(120, 100, 220, 0.4);
-  --betrieb-bg: rgba(255, 255, 255, 0.06);
-  --betrieb-fg: #c9c4dd;
-  --betrieb-ring: rgba(255, 255, 255, 0.14);
+  --kanton-bg: rgba(47, 195, 166, 0.16);
+  --kanton-fg: #0f5a4c;
+  --kanton-ring: rgba(27, 143, 121, 0.4);
+  --betrieb-bg: rgba(22, 33, 31, 0.05);
+  --betrieb-fg: #54615e;
+  --betrieb-ring: #dce4e1;
 
   /* ================= Typografie ================= */
   --font: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -92,11 +101,11 @@
   --r-xl: 22px;
   --r-pill: 999px;
 
-  /* ================= Schatten / Tiefe ================= */
-  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --sh-md: 0 6px 20px -6px rgba(0, 0, 0, 0.5);
-  --sh-lg: 0 18px 50px -12px rgba(0, 0, 0, 0.6);
-  --sh-glow: 0 10px 34px -10px rgba(67, 44, 161, 0.5);
+  /* ================= Schatten / Tiefe (hell, dezent) ================= */
+  --sh-sm: 0 1px 2px rgba(22, 33, 31, 0.06);
+  --sh-md: 0 6px 20px -8px rgba(22, 33, 31, 0.12);
+  --sh-lg: 0 18px 50px -14px rgba(22, 33, 31, 0.18);
+  --sh-glow: 0 10px 30px -12px rgba(47, 195, 166, 0.4);
 
   /* ================= Bewegung ================= */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
