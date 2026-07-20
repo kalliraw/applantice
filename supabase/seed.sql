@@ -311,13 +311,9 @@ insert into public.fach (name, modul_nr, kontext, typ, notenkomponente_id, gewic
 
 -- Benutzer/Allowlist (aus data/accounts.csv). auth_user_id wird beim ersten Login verknüpft.
 insert into public.benutzer (email, name, rolle, auth_typ, ausbildungsstart) values
-  ('admin@swisstph.ch', 'Break-Glass Admin', 'berufsbildner', 'lokal', null),
-  ('isaak.kallehave@swisstph.ch', 'Isaak Kallehave', 'berufsbildner', 'entra_id', null),
-  ('tomek.wenzel@swisstph.ch', 'Tomek Wenzel', 'lernende', 'entra_id', '2024-08-01'),
-  ('TODO-lernender-2@swisstph.ch', 'TODO Name Lernende(r) 2', 'lernende', 'entra_id', null),
-  ('test.lernende@swisstph.ch', 'Test Lernende', 'lernende', 'lokal', '2025-08-01');
+  ('ausbildungsplan-admin@swisstph.ch', 'Break-Glass Admin', 'berufsbildner', 'lokal', null);
 
--- Break-Glass-Login (admin@swisstph.ch). Passwort NACH erstem Login ändern, danach
+-- Break-Glass-Login (ausbildungsplan-admin@swisstph.ch). Passwort NACH erstem Login ändern, danach
 -- passwort_platzhalter in data/accounts.csv leeren und Seed neu generieren.
 do $$
 declare v_uid uuid := gen_random_uuid();
@@ -331,7 +327,7 @@ begin
     email_change_token_current, phone_change, phone_change_token, reauthentication_token
   ) values (
     '00000000-0000-0000-0000-000000000000', v_uid, 'authenticated', 'authenticated',
-    'admin@swisstph.ch', crypt('um2LmiUZMEoD8E4qEayj', gen_salt('bf')),
+    'ausbildungsplan-admin@swisstph.ch', crypt('um2LmiUZMEoD8E4qEayj', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
     '', '', '', '', '', '', '', ''
@@ -341,43 +337,11 @@ begin
     last_sign_in_at, created_at, updated_at
   ) values (
     gen_random_uuid(), v_uid, v_uid::text,
-    jsonb_build_object('sub', v_uid::text, 'email', 'admin@swisstph.ch'),
+    jsonb_build_object('sub', v_uid::text, 'email', 'ausbildungsplan-admin@swisstph.ch'),
     'email', now(), now(), now()
   );
   -- Verknüpfung (der Auth-Trigger tut dies bereits; hier explizit zur Sicherheit).
-  update public.benutzer set auth_user_id = v_uid where email = 'admin@swisstph.ch';
-end $$;
-
-
--- Break-Glass-Login (test.lernende@swisstph.ch). Passwort NACH erstem Login ändern, danach
--- passwort_platzhalter in data/accounts.csv leeren und Seed neu generieren.
-do $$
-declare v_uid uuid := gen_random_uuid();
-begin
-  insert into auth.users (
-    instance_id, id, aud, role, email, encrypted_password,
-    email_confirmed_at, created_at, updated_at,
-    raw_app_meta_data, raw_user_meta_data,
-    -- GoTrue liest diese Token-Spalten als non-null String -> leere Strings statt NULL.
-    confirmation_token, recovery_token, email_change_token_new, email_change,
-    email_change_token_current, phone_change, phone_change_token, reauthentication_token
-  ) values (
-    '00000000-0000-0000-0000-000000000000', v_uid, 'authenticated', 'authenticated',
-    'test.lernende@swisstph.ch', crypt('lernende2026', gen_salt('bf')),
-    now(), now(), now(),
-    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
-    '', '', '', '', '', '', '', ''
-  );
-  insert into auth.identities (
-    id, user_id, provider_id, identity_data, provider,
-    last_sign_in_at, created_at, updated_at
-  ) values (
-    gen_random_uuid(), v_uid, v_uid::text,
-    jsonb_build_object('sub', v_uid::text, 'email', 'test.lernende@swisstph.ch'),
-    'email', now(), now(), now()
-  );
-  -- Verknüpfung (der Auth-Trigger tut dies bereits; hier explizit zur Sicherheit).
-  update public.benutzer set auth_user_id = v_uid where email = 'test.lernende@swisstph.ch';
+  update public.benutzer set auth_user_id = v_uid where email = 'ausbildungsplan-admin@swisstph.ch';
 end $$;
 
 

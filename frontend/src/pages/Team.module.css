@@ -355,7 +355,7 @@
   padding: 1px 8px;
   border-radius: var(--r-pill);
   background: var(--accent-bright);
-  color: #17122b;
+  color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
   white-space: nowrap;
@@ -497,4 +497,145 @@
   color: var(--text-2);
   padding: 3px 0 3px 12px;
   border-left: 2px solid var(--border);
+}
+
+/* ===================== Team-Planungsübersicht (alle Lernenden) ===================== */
+.planWrap {
+  overflow-x: auto;
+  padding-bottom: var(--sp-3);
+}
+.planHeader,
+.planGrid {
+  display: grid;
+  column-gap: 0;
+}
+.planHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-strong);
+  padding: var(--sp-2) 0;
+  margin-bottom: var(--sp-2);
+}
+.planHeadZeit {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+  font-weight: 600;
+  padding-left: 2px;
+}
+.planHeadLane {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--sp-2);
+  border-left: 1px solid var(--border);
+  min-width: 0;
+}
+.planHeadName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 560;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.planAdd {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.planAdd:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.planGrid {
+  position: relative;
+  grid-template-rows: 100%;
+}
+.planMonthLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  z-index: 0;
+  border-top: 1px dashed var(--border);
+}
+.planAchse {
+  position: relative;
+  z-index: 1;
+}
+.planMonthLabel {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 0.64rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  background: var(--bg);
+  padding: 0 2px;
+  white-space: nowrap;
+}
+.planLane {
+  position: relative;
+  z-index: 1;
+  border-left: 1px solid var(--border);
+}
+.planAktiv {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  z-index: 0;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+}
+.planLeer {
+  position: absolute;
+  left: 8px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-style: italic;
+}
+.planBar {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+  border: 1px solid var(--tc);
+  border-left: 4px solid var(--tc);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--tc) 20%, var(--surface));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+.planBar:hover {
+  background: color-mix(in srgb, var(--tc) 32%, var(--surface));
+}
+.planBarName {
+  font-weight: 600;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.planBarKw {
+  font-size: 0.68rem;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
 }
