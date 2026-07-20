@@ -140,6 +140,10 @@ services:
         # Vite bäckt diese Werte zur Build-Zeit ein. Gleicher Origin wie die App.
         VITE_SUPABASE_URL: ${PUBLIC_URL:-http://localhost:8080}
         VITE_SUPABASE_ANON_KEY: ${ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+        # Optionaler Default für den Entra-Benutzer-Sync (Einstellungen > Benutzer). Kein
+        # Secret – nur Gruppenname/GUID. In der App überschreibbar (localStorage).
+        VITE_ENTRA_GROUP_NAME: ${VITE_ENTRA_GROUP_NAME:-}
+        VITE_ENTRA_GROUP_ID: ${VITE_ENTRA_GROUP_ID:-}
     restart: unless-stopped
     depends_on:
       auth:

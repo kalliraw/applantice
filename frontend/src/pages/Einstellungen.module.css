@@ -1,0 +1,146 @@
+/* ---------- Entra-Sync-Karte ---------- */
+.syncCard {
+  margin-bottom: var(--sp-5);
+}
+.syncLead {
+  margin-top: 0;
+  font-size: 0.88rem;
+}
+.syncFelder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+@media (max-width: 640px) {
+  .syncFelder {
+    grid-template-columns: 1fr;
+  }
+}
+.warn {
+  font-size: 0.85rem;
+  color: var(--gelb, #d8a200);
+  background: color-mix(in srgb, var(--gelb, #d8a200) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gelb, #d8a200) 35%, transparent);
+  border-radius: var(--r-md, 8px);
+  padding: var(--sp-3);
+  margin: var(--sp-2) 0;
+}
+.syncErg {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0 var(--sp-3);
+  font-size: 0.85rem;
+}
+.syncFehlerListe {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+.syncFehlerListe summary {
+  cursor: pointer;
+  color: var(--gelb, #d8a200);
+}
+.syncFehlerListe ul {
+  margin: var(--sp-2) 0 0;
+  padding-left: var(--sp-4);
+}
+.syncActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+
+/* ---------- Benutzerliste (Tabelle, wie Fächer-Verwaltung) ---------- */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.sucheFeld {
+  width: 260px;
+  max-width: 100%;
+}
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  font-size: 0.9rem;
+}
+.table thead th {
+  text-align: left;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.table tbody td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table tbody tr:hover {
+  background: var(--surface-2);
+}
+.name {
+  font-weight: 550;
+  color: var(--text);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+.inaktiv {
+  opacity: 0.5;
+}
+
+/* ---------- Bearbeiten-Modal ---------- */
+.editGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  align-items: end;
+}
+@media (max-width: 520px) {
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.9rem;
+  margin-top: var(--sp-3);
+  cursor: pointer;
+}
+.hintEigen {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-top: var(--sp-3);
+}

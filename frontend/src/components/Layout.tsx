@@ -20,6 +20,7 @@ const NAV: NavEintrag[] = [
   { pfad: '/bildungsbericht', label: 'Bildungsbericht', icon: 'file-text' },
   { pfad: '/faecher', label: 'Fächer verwalten', icon: 'book', nurBB: true },
   { pfad: '/teams', label: 'Team-Rotation', icon: 'users' },
+  { pfad: '/einstellungen', label: 'Einstellungen', icon: 'settings', nurBB: true },
 ]
 
 function initialen(name: string): string {
