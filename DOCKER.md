@@ -24,7 +24,7 @@ docker compose up -d --build  # Frontend nach Änderungen neu bauen
 |------------|---------------------------|-------|
 | `db`       | `supabase/postgres`       | Postgres + Supabase-Rollen; `docker/db/init` legt Service-Rollen & `auth`-Schema an |
 | `auth`     | `supabase/gotrue`         | Authentifizierung (E-Mail-Break-Glass + optional Entra ID) |
-| `migrator` | `supabase/postgres`       | Einmalig: wendet `supabase/migrations/*` + `supabase/seed.sql` an (idempotent) |
+| `migrator` | `supabase/postgres`       | Bei jedem Start: wendet neue `supabase/migrations/*` an (Buchführung in `migrator.angewendet`), bei frischer DB zusätzlich `supabase/seed.sql` |
 | `rest`     | `postgrest/postgrest`     | REST + RPC auf `public` |
 | `web`      | selbst gebaut (Vite+nginx)| liefert die SPA **und** proxyt `/auth/v1` + `/rest/v1` auf denselben Origin |
 

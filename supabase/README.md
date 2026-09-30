@@ -17,28 +17,28 @@ Dasselbe Schema läuft lokal (Supabase CLI) und produktiv (offizielles Self-Host
 
 Reihenfolge: Migrationen (alphabetisch nach Dateiname), danach `seed.sql`.
 
-### Neue Migration in einen LAUFENDEN Docker-Stack einspielen
+### Neue Migrationen im Docker-Stack
 
-`docker/migrator/apply.sh` bootstrappt nur eine **frische** DB (überspringt alles, sobald
-`public.benutzer` existiert). Eine nachträglich hinzugekommene Migration – z.B.
-`20260720120001_auth_autoprovision.sql` – wird daher bei einem einfachen
-`docker compose up` **nicht** angewandt. Zwei Wege:
+`docker/migrator/apply.sh` läuft bei **jedem** `docker compose up` und spielt nur
+Migrationen ein, die noch nicht in `migrator.angewendet` gebucht sind – jede in einer
+eigenen Transaktion zusammen mit ihrem Eintrag. Schlägt eine fehl, bleibt die DB
+unverändert und der Stack startet nicht (`rest` wartet auf den Migrator). Also einfach:
 
 ```bash
-# A) Frisch aufsetzen (Dev, verwirft Daten): Volume löschen, alles neu seeden
-docker compose down -v && docker compose up -d --build
-
-# B) Bestand behalten: die neuen (idempotenten) Migrationen manuell anwenden
-docker compose exec -T db psql -U supabase_admin -d postgres \
-  < supabase/migrations/20260720120001_auth_autoprovision.sql
-docker compose exec -T db psql -U supabase_admin -d postgres \
-  < supabase/migrations/20260720120002_benutzer_delete.sql
-# … und so weiter für alle neueren Dateien in Reihenfolge, zuletzt z.B.:
-docker compose exec -T db psql -U supabase_admin -d postgres   < supabase/migrations/20260720120008_admin_schutz.sql
-docker compose exec -T db psql -U supabase_admin -d postgres   < supabase/migrations/20260720120009_notenregeln.sql
-# Danach PostgREST das Schema neu laden lassen (sonst greift die Policy evtl. verzögert):
-docker compose exec -T db psql -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
+git pull && docker compose up -d --build
+docker compose logs migrator      # zeigt, was angewendet wurde
 ```
+
+- **Frische DB:** alle Migrationen, danach `seed.sql` (ebenfalls gebucht).
+- **Bestehende DB ohne Buchführung** (vor diesem Mechanismus von Hand gepflegt): beim
+  ersten Lauf werden Migrationen mit „Idempotent" im Kopfkommentar erneut eingespielt
+  (holt vergessene manuelle Schritte nach), alle anderen und der Seed gelten als
+  angewendet (Basis-Schema).
+- **Regel für neue Migrationen:** eine Datei = eine Änderung, nie eine bereits
+  angewendete Datei nachträglich ändern (sie läuft nicht erneut) – stattdessen eine neue
+  Datei. Weiterhin idempotent schreiben (`if not exists`, `create or replace`,
+  `drop policy if exists`), damit Baseline und `supabase db reset` robust bleiben.
+- Status: `docker compose exec db psql -U supabase_admin -d postgres -c "table migrator.angewendet"`
 
 ## Lokal
 
