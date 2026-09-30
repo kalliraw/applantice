@@ -9,7 +9,8 @@ import type {
   Bildungsbericht,
   EinschaetzungStufe,
 } from '../lib/types.ts'
-import { berechneNotenstand, rundeAufZehntel } from '../lib/noten.ts'
+import { berechneBm, berechneNotenstand, bmEingaben, rundeAufZehntel } from '../lib/noten.ts'
+import type { Notenregel } from '../lib/types.ts'
 import { Badge, Button, Card, EmptyState, Modal, PageHeader, Select, Spinner, Textarea } from '../ui/index.ts'
 import { LernendeAuswahl } from '../components/LernendeAuswahl.tsx'
 import { sendeMailEreignis } from '../lib/mail.ts'
@@ -68,14 +69,15 @@ async function sendeBerichtAbgeschlossen(args: {
 // Aktuellen Ausbildungsstand laden (erledigte Kompetenzen, LZ-Fortschritt,
 // Vornote) – wird beim Erstellen/Abschliessen in den Bericht eingefroren.
 async function ladeKennzahlen(benutzerId: string, machtBm: boolean): Promise<BerichtKennzahlen> {
-  const [hkRes, lzRes, einschRes, faecherRes, kompRes, lbRes, noteRes] = await Promise.all([
+  const [hkRes, lzRes, einschRes, faecherRes, kompRes, lbRes, noteRes, regelRes] = await Promise.all([
     supabase.from('handlungskompetenz').select('id', { count: 'exact', head: true }),
     supabase.from('leistungsziel').select('id, handlungskompetenz_id'),
     supabase.from('selbsteinschaetzung').select('leistungsziel_id, stufe').eq('benutzer_id', benutzerId),
     supabase.from('fach').select('*').eq('aktiv', true),
     supabase.from('notenkomponente').select('*'),
     supabase.from('leistungsbeurteilung').select('*').eq('benutzer_id', benutzerId),
-    supabase.from('note').select('*').eq('benutzer_id', benutzerId).not('notenkomponente_id', 'is', null),
+    supabase.from('note').select('*').eq('benutzer_id', benutzerId).order('erfasst_am'),
+    supabase.from('notenregel').select('*'),
   ])
 
   // Höchste erreichte Stufe je Leistungsziel.
@@ -106,17 +108,22 @@ async function ladeKennzahlen(benutzerId: string, machtBm: boolean): Promise<Ber
   // Vornote(n) exakt wie im Notenrechner.
   const komponenten = (kompRes.data as Parameters<typeof berechneNotenstand>[0]) ?? []
   const faecher = (faecherRes.data as Parameters<typeof berechneNotenstand>[1]) ?? []
-  const lbsByFach: Record<string, { wert: number; gewicht: number }[]> = {}
-  for (const l of (lbRes.data as { fach_id: string; wert: number; gewicht: number }[]) ?? []) {
-    (lbsByFach[l.fach_id] ??= []).push({ wert: l.wert, gewicht: l.gewicht })
+  const regeln = (regelRes.data as Notenregel[]) ?? []
+  const regelEfz = regeln.find((r) => r.kontext === 'EFZ')
+  const regelBm = regeln.find((r) => r.kontext === 'BM')
+  const lbsByFach: Record<string, { wert: number; gewicht: number; semester: number | null }[]> = {}
+  for (const l of (lbRes.data as { fach_id: string; wert: number; gewicht: number; semester: number | null }[]) ?? []) {
+    (lbsByFach[l.fach_id] ??= []).push({ wert: l.wert, gewicht: l.gewicht, semester: l.semester })
   }
   const ipaKomp = komponenten.find((k) => k.code === 'IPA')
   let ipaWert: number | null = null
-  for (const n of (noteRes.data as { notenkomponente_id: string; wert: number }[]) ?? []) {
-    if (n.notenkomponente_id === ipaKomp?.id) ipaWert = n.wert
+  const pruefung: Record<string, number> = {}
+  for (const n of (noteRes.data as { notenkomponente_id: string | null; fach_id: string | null; art: string | null; wert: number }[]) ?? []) {
+    if (n.notenkomponente_id && n.notenkomponente_id === ipaKomp?.id) ipaWert = n.wert
+    if (n.fach_id && n.art === 'pruefung') pruefung[n.fach_id] = n.wert
   }
-  const efz = berechneNotenstand(komponenten, faecher, lbsByFach, ipaWert, 'EFZ', machtBm)
-  const bm = machtBm ? berechneNotenstand(komponenten, faecher, lbsByFach, ipaWert, 'BM', machtBm) : null
+  const efz = berechneNotenstand(komponenten, faecher, lbsByFach, ipaWert, 'EFZ', machtBm, regelEfz?.rundung_gesamt ?? null)
+  const bm = machtBm && regelBm ? berechneBm(bmEingaben(komponenten, faecher, lbsByFach, pruefung), regelBm) : null
 
   return {
     hkErledigt,
@@ -126,7 +133,7 @@ async function ladeKennzahlen(benutzerId: string, machtBm: boolean): Promise<Ber
     lzGeuebt,
     lzSelbststaendig,
     vornoteEfz: efz.total != null ? rundeAufZehntel(efz.total) : null,
-    vornoteBm: bm && bm.total != null ? rundeAufZehntel(bm.total) : null,
+    vornoteBm: bm && bm.gesamt != null ? rundeAufZehntel(bm.gesamt) : null,
     machtBm,
   }
 }

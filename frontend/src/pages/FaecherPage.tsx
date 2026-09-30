@@ -15,6 +15,7 @@ type FormState = {
   gewicht: string
   bemerkung: string
   aktiv: boolean
+  hat_abschlusspruefung: boolean
 }
 
 const LEER = (kontext: NotenKontext): FormState => ({
@@ -27,6 +28,7 @@ const LEER = (kontext: NotenKontext): FormState => ({
   gewicht: '1',
   bemerkung: '',
   aktiv: true,
+  hat_abschlusspruefung: false,
 })
 
 export function FaecherPage() {
@@ -82,6 +84,7 @@ export function FaecherPage() {
       gewicht: Number(form.gewicht) || 0,
       bemerkung: form.bemerkung.trim() || null,
       aktiv: form.aktiv,
+      hat_abschlusspruefung: form.kontext === 'BM' && form.hat_abschlusspruefung,
     }
     if (form.id) await supabase.from('fach').update(payload).eq('id', form.id)
     else await supabase.from('fach').insert(payload)
@@ -106,6 +109,7 @@ export function FaecherPage() {
       gewicht: String(f.gewicht),
       bemerkung: f.bemerkung ?? '',
       aktiv: f.aktiv,
+      hat_abschlusspruefung: f.hat_abschlusspruefung,
     })
   }
 
@@ -238,6 +242,17 @@ export function FaecherPage() {
               ...komponenten.filter((k) => k.kontext === form.kontext).map((k) => ({ value: k.id, label: k.name })),
             ]}
           />
+          {form.kontext === 'BM' && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', fontSize: '0.9rem', color: 'var(--text-2)' }}>
+              <input
+                type="checkbox"
+                checked={form.hat_abschlusspruefung}
+                onChange={(e) => setForm({ ...form, hat_abschlusspruefung: e.target.checked })}
+                style={{ accentColor: 'var(--accent-solid-1)', width: 16, height: 16 }}
+              />
+              Abschlussprüfung (Fachnote = Erfahrungsnote + Prüfungsnote)
+            </label>
+          )}
           <Textarea label="Bemerkung (optional)" value={form.bemerkung} onChange={(e) => setForm({ ...form, bemerkung: e.target.value })} />
         </Modal>
       )}

@@ -70,6 +70,32 @@ export type Notenkomponente = {
   entfaellt_bei_bm: boolean
   sortierung: number
   aktiv: boolean
+  /** Rundung jeder Fach-/Modulnote vor dem Mitteln (Migration 120009). */
+  rundung_einzelnote: Rundung
+  /** Rundung des Komponentenwerts. */
+  rundung: Rundung
+  /** Fallnote (Bestehen), null = keine Bedingung. */
+  mindestnote: number | null
+  /** BM: zählt für die Semester-Promotion (IDAF/IDPA nicht). */
+  promotionsrelevant: boolean
+}
+
+export type Rundung = 'halbe' | 'zehntel' | null
+
+/** Berechnungs-/Bestehensregeln je Kontext (Tabelle notenregel). */
+export type Notenregel = {
+  kontext: NotenKontext
+  bezeichnung: string
+  rundung_gesamt: Rundung
+  mindestnote_gesamt: number | null
+  rundung_semesternote: Rundung
+  rundung_erfahrungsnote: Rundung
+  rundung_pruefungsnote: Rundung
+  rundung_fachnote: Rundung
+  anteil_pruefung: number | null
+  max_ungenuegend: number | null
+  max_notendefizit: number | null
+  quelle: string | null
 }
 
 /** Einzelne Prüfungsnote (Leistungsbeurteilung) innerhalb eines Moduls/Fachs. */
@@ -98,6 +124,8 @@ export type Fach = {
   sortierung: number
   /** Geplantes Schul-Semester 1-8, in dem das Modul unterrichtet wird (global). */
   semester: number | null
+  /** BM: Fach mit Abschlussprüfung (Fachnote = ½ Erfahrung + ½ Prüfung). */
+  hat_abschlusspruefung: boolean
 }
 
 export type Note = {

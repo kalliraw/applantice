@@ -2,26 +2,28 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase.ts'
 import { useAuth } from '../auth/AuthContext.tsx'
 import { useLernende } from '../lib/LernendenContext.tsx'
-import type { Fach, Leistungsbeurteilung, Note, Notenkomponente, NotenKontext } from '../lib/types.ts'
+import type { Fach, Leistungsbeurteilung, Note, Notenkomponente, NotenKontext, Notenregel } from '../lib/types.ts'
 import {
+  berechneBm,
   berechneKomponente,
   berechneNotenstand,
+  bmEingaben,
   gewichtSumme,
   modulnote,
   modulStatus,
-  rundeAufZehntel,
+  pruefeBestehen,
 } from '../lib/noten.ts'
-import { Badge, Button, Card, EmptyState, Modal, PageHeader, Spinner, Tabs } from '../ui/index.ts'
+import { semesterVon } from '../lib/zeitstrahl.ts'
+import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Tabs } from '../ui/index.ts'
 import { LernendeAuswahl } from '../components/LernendeAuswahl.tsx'
+import { LbEditor } from './noten/LbEditor.tsx'
+import { EfzZielKarte } from './noten/EfzZielKarte.tsx'
+import { BmBereich } from './noten/BmBereich.tsx'
+import { useSimulation } from './noten/simulation.ts'
+import { fmt, fmtGerundet, parseNote } from './noten/format.ts'
 import s from './Noten.module.css'
 
-function parseNote(str: string | undefined | null): number | null {
-  if (str == null || str === '') return null
-  const n = Number(String(str).replace(',', '.'))
-  return Number.isFinite(n) && n >= 1 && n <= 6 ? n : null
-}
-const fmt = (v: number | null) => (v == null ? '—' : rundeAufZehntel(v).toFixed(1))
-const lbWerte = (lbs: Leistungsbeurteilung[]) => lbs.map((l) => ({ wert: l.wert, gewicht: l.gewicht }))
+const lbWerte = (lbs: { wert: number; gewicht: number }[]) => lbs.map((l) => ({ wert: l.wert, gewicht: l.gewicht }))
 
 // Kurze Labels für die Ergebnis-Leiste (kompakt, kein Umbruch/Scrollen).
 const KURZ: Record<string, string> = {
@@ -29,8 +31,6 @@ const KURZ: Record<string, string> = {
   INFORMATIK: 'Informatik',
   ABU: 'ABU',
   EGK: 'EGK',
-  BM_FACHNOTE: 'BM-Fächer',
-  BM_IDPA: 'IDPA',
 }
 const kurzName = (code: string, name: string) => KURZ[code] ?? name
 
@@ -39,6 +39,7 @@ export function NotenPage() {
   const { aktiv, aktivId, istBB, patchLernende } = useLernende()
   const istEigen = !!aktiv && !!profil && aktiv.id === profil.id
   const machtBM = !!aktiv?.macht_bm
+  const aktuellesSemester = aktiv?.ausbildungsstart ? semesterVon(new Date(), new Date(aktiv.ausbildungsstart)) : null
 
   async function toggleBM(v: boolean) {
     if (!aktiv) return
@@ -48,23 +49,31 @@ export function NotenPage() {
 
   const [faecher, setFaecher] = useState<Fach[]>([])
   const [komponenten, setKomponenten] = useState<Notenkomponente[]>([])
+  const [regeln, setRegeln] = useState<Notenregel[]>([])
   const [lbsByFach, setLbsByFach] = useState<Record<string, Leistungsbeurteilung[]>>({})
+  const [noten, setNoten] = useState<Note[]>([])
   const [ipaWert, setIpaWert] = useState<string>('')
   const [kontext, setKontext] = useState<NotenKontext>('EFZ')
   const [detailFachId, setDetailFachId] = useState<string | null>(null)
   const [suche, setSuche] = useState('')
   const [ladt, setLadt] = useState(true)
+  const simulation = useSimulation(aktivId)
+  const { sim } = simulation
 
   const ipaKomp = komponenten.find((k) => k.code === 'IPA')
+  const regelEfz = regeln.find((r) => r.kontext === 'EFZ') ?? null
+  const regelBm = regeln.find((r) => r.kontext === 'BM') ?? null
 
   useEffect(() => {
     void (async () => {
-      const [f, k] = await Promise.all([
+      const [f, k, r] = await Promise.all([
         supabase.from('fach').select('*').eq('aktiv', true).order('sortierung'),
         supabase.from('notenkomponente').select('*').order('sortierung'),
+        supabase.from('notenregel').select('*'),
       ])
       setFaecher((f.data as Fach[]) ?? [])
       setKomponenten((k.data as Notenkomponente[]) ?? [])
+      setRegeln((r.data as Notenregel[]) ?? [])
       setLadt(false)
     })()
   }, [])
@@ -72,32 +81,74 @@ export function NotenPage() {
   useEffect(() => {
     if (!aktivId) {
       setLbsByFach({})
+      setNoten([])
       setIpaWert('')
       return
     }
     void (async () => {
       const [lb, note] = await Promise.all([
         supabase.from('leistungsbeurteilung').select('*').eq('benutzer_id', aktivId).order('datum'),
-        supabase.from('note').select('*').eq('benutzer_id', aktivId).not('notenkomponente_id', 'is', null).order('erfasst_am'),
+        supabase.from('note').select('*').eq('benutzer_id', aktivId).order('erfasst_am'),
       ])
       const byFach: Record<string, Leistungsbeurteilung[]> = {}
       for (const l of (lb.data as Leistungsbeurteilung[]) ?? []) (byFach[l.fach_id] ??= []).push(l)
       setLbsByFach(byFach)
+      const alle = (note.data as Note[]) ?? []
+      setNoten(alle)
       let ipa = ''
-      for (const n of (note.data as Note[]) ?? []) if (n.notenkomponente_id === ipaKomp?.id) ipa = String(n.wert)
+      for (const n of alle) if (n.notenkomponente_id === ipaKomp?.id) ipa = String(n.wert)
       setIpaWert(ipa)
     })()
     // ipaKomp?.id stabil nach Laden der Komponenten
   }, [aktivId, ipaKomp?.id])
 
+  // Neueste Prüfungsnote je Fach (note ist append-only, sortiert nach erfasst_am).
+  const pruefungReal = useMemo(() => {
+    const m: Record<string, number> = {}
+    for (const n of noten) if (n.fach_id && n.art === 'pruefung') m[n.fach_id] = n.wert
+    return m
+  }, [noten])
+
+  // Erfasste + geplante LBs (Simulation) je Fach.
+  const lbsMitSim = useMemo(() => {
+    const m: Record<string, { wert: number; gewicht: number; semester: number | null }[]> = {}
+    for (const f of faecher) {
+      const real = lbsByFach[f.id] ?? []
+      const geplant = sim.lbs[f.id] ?? []
+      if (real.length || geplant.length) m[f.id] = [...real, ...geplant]
+    }
+    return m
+  }, [faecher, lbsByFach, sim.lbs])
+
+  const ipaReal = parseNote(ipaWert)
+  const ipaEffektiv = ipaReal ?? sim.ipa
+
   // ---- Berechnung (live) ----
-  const { roots, blatt, total, dispensiert } = useMemo(() => {
-    const r = berechneNotenstand(komponenten, faecher, lbsByFach, parseNote(ipaWert), kontext, machtBM)
-    return { roots: r.roots, blatt: r.blatt, total: r.total, dispensiert: new Set(r.dispensiertIds) }
-  }, [komponenten, faecher, lbsByFach, ipaWert, kontext, machtBM])
+  const efz = useMemo(() => {
+    const rund = regelEfz?.rundung_gesamt ?? null
+    const mitSim = berechneNotenstand(komponenten, faecher, lbsMitSim, ipaEffektiv, 'EFZ', machtBM, rund)
+    const ohneSim = berechneNotenstand(komponenten, faecher, lbsByFach, ipaReal, 'EFZ', machtBM, rund)
+    return {
+      ...mitSim,
+      totalOhneSim: ohneSim.total,
+      dispensiert: new Set(mitSim.dispensiertIds),
+      bedingungen: pruefeBestehen(mitSim.roots, mitSim.blatt, mitSim.total, regelEfz?.mindestnote_gesamt ?? null),
+      gesamtMitIpa: (ipa: number) =>
+        berechneNotenstand(komponenten, faecher, lbsMitSim, ipa, 'EFZ', machtBM, rund).total,
+    }
+  }, [komponenten, faecher, lbsMitSim, lbsByFach, ipaEffektiv, ipaReal, machtBM, regelEfz])
+
+  const bm = useMemo(() => {
+    if (!regelBm) return null
+    const pruefung = { ...sim.pruefung, ...pruefungReal }
+    const mitSim = berechneBm(bmEingaben(komponenten, faecher, lbsMitSim, pruefung), regelBm)
+    const ohneSim = berechneBm(bmEingaben(komponenten, faecher, lbsByFach, pruefungReal), regelBm)
+    return { ...mitSim, gesamtOhneSim: ohneSim.gesamt }
+  }, [regelBm, komponenten, faecher, lbsMitSim, lbsByFach, sim.pruefung, pruefungReal])
 
   // ---- LB-Mutationen ----
-  async function addLb(fachId: string, felder: { titel: string; gewicht: number; wert: number }) {
+  type LbFelder = { titel: string; gewicht: number; wert: number; semester: number | null }
+  async function addLb(fachId: string, felder: LbFelder) {
     if (!istEigen || !aktivId) return
     const { data } = await supabase
       .from('leistungsbeurteilung')
@@ -106,7 +157,7 @@ export function NotenPage() {
       .single()
     if (data) setLbsByFach((c) => ({ ...c, [fachId]: [...(c[fachId] ?? []), data as Leistungsbeurteilung] }))
   }
-  async function updateLb(id: string, fachId: string, patch: Partial<Pick<Leistungsbeurteilung, 'titel' | 'gewicht' | 'wert'>>) {
+  async function updateLb(id: string, fachId: string, patch: Partial<LbFelder>) {
     if (!istEigen) return
     setLbsByFach((c) => ({ ...c, [fachId]: (c[fachId] ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) }))
     await supabase.from('leistungsbeurteilung').update(patch).eq('id', id)
@@ -120,6 +171,19 @@ export function NotenPage() {
     const wert = parseNote(str)
     if (!istEigen || !aktivId || !ipaKomp || wert == null) return
     await supabase.from('note').insert({ benutzer_id: aktivId, notenkomponente_id: ipaKomp.id, wert, art: 'ipa' })
+  }
+  async function savePruefung(fachId: string, wert: number) {
+    if (!istEigen || !aktivId) return
+    // Append-only: neue Zeile statt Update – die neueste gilt.
+    const { data } = await supabase
+      .from('note')
+      .insert({ benutzer_id: aktivId, fach_id: fachId, wert, art: 'pruefung' })
+      .select()
+      .single()
+    if (data) {
+      setNoten((c) => [...c, data as Note])
+      simulation.setPruefung(fachId, null)
+    }
   }
 
   if (ladt) return <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}><Spinner /></div>
@@ -136,15 +200,21 @@ export function NotenPage() {
     .filter((k) => !hatKinder.has(k.id) && k.code !== 'IPA')
     .map((k) => ({ komp: k, faecher: faecher.filter((f) => f.kontext === kontext && f.notenkomponente_id === k.id && trifft(f)) }))
     .filter((g) => g.faecher.length > 0)
+  const bmFaecher = faecher.filter((f) => f.kontext === 'BM' && trifft(f))
 
   const detailFach = detailFachId ? faecher.find((f) => f.id === detailFachId) ?? null : null
+  const detailKomp = detailFach ? komponenten.find((k) => k.id === detailFach.notenkomponente_id) : undefined
+  const detailRundung = detailFach?.kontext === 'BM' ? regelBm?.rundung_semesternote ?? null : detailKomp?.rundung_einzelnote ?? null
+
+  const total = kontext === 'EFZ' ? efz.total : bm?.gesamt ?? null
+  const totalOhneSim = kontext === 'EFZ' ? efz.totalOhneSim : bm?.gesamtOhneSim ?? null
 
   return (
     <div>
       <PageHeader
         eyebrow="Qualifikationsverfahren"
         title="Notenrechner"
-        description="Pro Modul mehrere Leistungsbeurteilungen mit eigener Gewichtung. Klick auf ein Modul öffnet die Detailerfassung. Gewichte kommen aus den Daten, die EFZ-Note wird live nach BiVo berechnet."
+        description="Pro Modul mehrere Leistungsbeurteilungen mit eigener Gewichtung. Klick auf ein Modul öffnet die Detailerfassung mit Zielnote und Simulation. Gewichte, Rundung und Bestehensregeln kommen aus den Daten."
         actions={<LernendeAuswahl />}
       />
 
@@ -191,6 +261,16 @@ export function NotenPage() {
         <EmptyState title="Kein Lernender ausgewählt" text="Bitte oben eine lernende Person wählen." />
       ) : (
         <>
+          {simulation.aktiv && (
+            <div className={s.simBanner}>
+              <span>
+                <Badge tone="warn">Simulation aktiv</Badge> Geplante Noten fliessen in die Anzeige ein – gespeichert
+                nur in diesem Browser.
+              </span>
+              <Button size="sm" variant="ghost" onClick={simulation.reset}>Simulation zurücksetzen</Button>
+            </div>
+          )}
+
           <div className={s.suche}>
             <svg className={s.sucheIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
               <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
@@ -204,28 +284,42 @@ export function NotenPage() {
             />
           </div>
 
-            {kontext === 'EFZ' && ipaKomp && !q && (
-              <Card style={{ marginBottom: 'var(--sp-4)' }}>
-                <div className={s.compRow}>
-                  <div>
-                    <div className={s.fachNameRow}>Individuelle praktische Arbeit (IPA)</div>
-                    <div className={s.fachKomp}>Einzelnote · 40% der EFZ-Note</div>
+          {kontext === 'EFZ' && !q && (
+            <>
+              {ipaKomp && (
+                <Card style={{ marginBottom: 'var(--sp-4)' }}>
+                  <div className={s.compRow}>
+                    <div>
+                      <div className={s.fachNameRow}>Individuelle praktische Arbeit (IPA)</div>
+                      <div className={s.fachKomp}>Einzelnote · {Math.round(ipaKomp.gewicht * 100)}% der EFZ-Note</div>
+                    </div>
+                    <input
+                      className={s.noteInput}
+                      inputMode="decimal"
+                      disabled={!istEigen}
+                      defaultValue={ipaWert}
+                      onChange={(e) => setIpaWert(e.target.value)}
+                      onBlur={(e) => void saveIpa(e.target.value)}
+                      placeholder="–"
+                    />
                   </div>
-                  <input
-                    className={s.noteInput}
-                    inputMode="decimal"
-                    disabled={!istEigen}
-                    defaultValue={ipaWert}
-                    onChange={(e) => setIpaWert(e.target.value)}
-                    onBlur={(e) => void saveIpa(e.target.value)}
-                    placeholder="–"
-                  />
-                </div>
-              </Card>
-            )}
+                </Card>
+              )}
+              <EfzZielKarte
+                bedingungen={efz.bedingungen}
+                ipaReal={ipaReal}
+                ipaMindest={ipaKomp?.mindestnote ?? null}
+                simIpa={sim.ipa}
+                onSimIpa={simulation.setIpa}
+                gesamtMitIpa={efz.gesamtMitIpa}
+                quelle={regelEfz?.bezeichnung ?? null}
+              />
+            </>
+          )}
 
-            {gruppen.map((g) => {
-              const disp = dispensiert.has(g.komp.id)
+          {kontext === 'EFZ' &&
+            gruppen.map((g) => {
+              const disp = efz.dispensiert.has(g.komp.id)
               return (
                 <div key={g.komp.id} className={s.kompGruppe}>
                   <div className={s.kompGruppeTitel}>
@@ -234,7 +328,8 @@ export function NotenPage() {
                   <div className={s.fachList}>
                     {g.faecher.map((f) => {
                       const lbs = lbsByFach[f.id] ?? []
-                      const note = modulnote(lbWerte(lbs))
+                      const geplant = sim.lbs[f.id] ?? []
+                      const note = modulnote(lbWerte(lbsMitSim[f.id] ?? []))
                       const status = modulStatus(lbs)
                       const fehler = !disp && status === 'begonnen'
                       return (
@@ -253,9 +348,12 @@ export function NotenPage() {
                             {f.typ && <span className={s.fachKomp}>{f.typ}</span>}
                           </span>
                           <span className={s.fachRight}>
+                            {geplant.length > 0 && <Badge tone="warn">+{geplant.length} geplant</Badge>}
                             {fehler && <span className={s.sumBadge}>Σ {gewichtSumme(lbs)}%</span>}
                             <span className={s.lbCount}>{lbs.length} LB</span>
-                            <span className={`${s.gradeBig} ${note == null ? s.gradeEmpty : ''}`}>{fmt(note)}</span>
+                            <span className={`${s.gradeBig} ${note == null ? s.gradeEmpty : ''}`}>
+                              {fmtGerundet(note, g.komp.rundung_einzelnote)}
+                            </span>
                             <svg className={s.chevR} width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
                               <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
@@ -268,34 +366,75 @@ export function NotenPage() {
               )
             })}
 
-            {gruppen.length === 0 && (
-              <p className="muted" style={{ padding: 'var(--sp-4)' }}>
-                {q ? `Keine Module gefunden für „${suche}".` : 'Keine Fächer in diesem Kontext.'}
-              </p>
-            )}
+          {kontext === 'EFZ' && gruppen.length === 0 && (
+            <p className="muted" style={{ padding: 'var(--sp-4)' }}>
+              {q ? `Keine Module gefunden für „${suche}".` : 'Keine Fächer in diesem Kontext.'}
+            </p>
+          )}
+
+          {kontext === 'BM' &&
+            (bm && regelBm ? (
+              <BmBereich
+                faecher={bmFaecher}
+                stand={bm}
+                regel={regelBm}
+                pruefungReal={pruefungReal}
+                simPruefung={sim.pruefung}
+                istEigen={istEigen}
+                onSavePruefung={(fachId, wert) => void savePruefung(fachId, wert)}
+                onSimPruefung={simulation.setPruefung}
+                onOpen={setDetailFachId}
+              />
+            ) : (
+              <EmptyState
+                title="BM-Regeln fehlen"
+                text="Die Tabelle notenregel enthält keine BM-Regeln. Bitte Migration 20260720120009 einspielen."
+              />
+            ))}
           <div className={s.listeSpacer} />
 
           {/* Schwebende Ergebnis-Leiste (unten) */}
           <div className={s.resultBar}>
             <div className={s.gesamt}>
-              <div className={s.gesamtLabel}>{kontext === 'EFZ' ? 'EFZ-Gesamtnote' : 'BM-Gesamtnote'}</div>
+              <div className={s.gesamtLabel}>
+                {kontext === 'EFZ' ? 'EFZ-Gesamtnote' : 'BM-Gesamtnote'}
+                {simulation.aktiv && ' · simuliert'}
+              </div>
               <div className={`${s.gesamtWert} ${total == null ? s.gesamtWertLeer : ''}`}>{fmt(total)}</div>
+              {simulation.aktiv && totalOhneSim !== total && (
+                <div className={s.gesamtOhneSim}>ohne Simulation {fmt(totalOhneSim)}</div>
+              )}
             </div>
             <div className={s.teilnoten}>
-              {roots.map((r) => {
-                const komp = komponenten.find((k) => k.code === r.code)
-                return (
-                  <div key={r.code} className={s.teil}>
-                    <span className={s.teilName}>{kurzName(r.code, r.name)}</span>
+              {kontext === 'EFZ' &&
+                efz.roots.map((r) => {
+                  const komp = komponenten.find((k) => k.code === r.code)
+                  return (
+                    <div key={r.code} className={s.teil}>
+                      <span className={s.teilName}>{kurzName(r.code, r.name)}</span>
+                      <span className={s.teilLine}>
+                        <span className={s.teilWert}>{fmt(berechneKomponente(r, efz.blatt))}</span>
+                        <span className={s.teilGewicht}>{Math.round((komp?.gewicht ?? 0) * 100)}%</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              {kontext === 'BM' && bm && (
+                <>
+                  <div className={s.teil}>
+                    <span className={s.teilName}>Ungenügend</span>
                     <span className={s.teilLine}>
-                      <span className={s.teilWert}>{fmt(berechneKomponente(r, blatt))}</span>
-                      <span className={s.teilGewicht}>{Math.round((komp?.gewicht ?? 0) * 100)}%</span>
+                      <span className={s.teilWert}>{bm.bestehen.anzahlUngenuegend}</span>
                     </span>
                   </div>
-                )
-              })}
-              {kontext === 'BM' && total == null && (
-                <span className={s.teilBM}>BM-Gewichte noch nicht erfasst</span>
+                  <div className={s.teil}>
+                    <span className={s.teilName}>Defizit</span>
+                    <span className={s.teilLine}>
+                      <span className={s.teilWert}>{bm.bestehen.notendefizit.toFixed(1)}</span>
+                    </span>
+                  </div>
+                  {bm.vorlaeufig && <span className={s.teilBM}>vorläufig</span>}
+                </>
               )}
             </div>
           </div>
@@ -305,137 +444,20 @@ export function NotenPage() {
       {detailFach && (
         <LbEditor
           fach={detailFach}
+          kontext={detailFach.kontext}
           lbs={lbsByFach[detailFach.id] ?? []}
+          simLbs={sim.lbs[detailFach.id] ?? []}
+          rundung={detailRundung}
+          aktuellesSemester={aktuellesSemester}
           istEigen={istEigen}
           onClose={() => setDetailFachId(null)}
           onAdd={(felder) => addLb(detailFach.id, felder)}
           onUpdate={(id, patch) => updateLb(id, detailFach.id, patch)}
           onDelete={(id) => deleteLb(id, detailFach.id)}
+          onSimAdd={(lb) => simulation.addLb(detailFach.id, lb)}
+          onSimRemove={(id) => simulation.removeLb(detailFach.id, id)}
         />
       )}
     </div>
-  )
-}
-
-function LbEditor({
-  fach,
-  lbs,
-  istEigen,
-  onClose,
-  onAdd,
-  onUpdate,
-  onDelete,
-}: {
-  fach: Fach
-  lbs: Leistungsbeurteilung[]
-  istEigen: boolean
-  onClose: () => void
-  onAdd: (felder: { titel: string; gewicht: number; wert: number }) => void | Promise<void>
-  onUpdate: (id: string, patch: Partial<Pick<Leistungsbeurteilung, 'titel' | 'gewicht' | 'wert'>>) => void | Promise<void>
-  onDelete: (id: string) => void | Promise<void>
-}) {
-  const [titel, setTitel] = useState('')
-  const [gewicht, setGewicht] = useState('')
-  const [note, setNote] = useState('')
-
-  const modn = modulnote(lbs.map((l) => ({ wert: l.wert, gewicht: l.gewicht })))
-  const summe = gewichtSumme(lbs)
-  const vollstaendig = lbs.length === 0 || Math.abs(summe - 100) < 0.01
-
-  function hinzufuegen() {
-    const w = parseNote(note)
-    const g = Number(gewicht.replace(',', '.'))
-    if (w == null || !Number.isFinite(g) || g <= 0) return
-    void onAdd({ titel: titel.trim() || `LB ${lbs.length + 1}`, gewicht: g, wert: w })
-    setTitel('')
-    setGewicht('1')
-    setNote('')
-  }
-
-  return (
-    <Modal open onClose={onClose} title={fach.name} footer={<Button variant="secondary" onClick={onClose}>Schliessen</Button>}>
-      <div className={s.lbHeadChip}>
-        <span className={`${s.modulChip} ${fach.modul_nr ? '' : s.modulChipLeer}`}>
-          {fach.modul_nr ? `Modul ${fach.modul_nr}` : 'kein Modul'}
-        </span>
-      </div>
-
-      <table className={s.lbTable}>
-        <thead>
-          <tr>
-            <th>Leistungsbeurteilung</th>
-            <th style={{ width: 80 }}>Gewicht %</th>
-            <th style={{ width: 80 }}>Note</th>
-            {istEigen && <th style={{ width: 40 }}></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {lbs.map((l) => (
-            <tr key={l.id}>
-              <td>
-                {istEigen ? (
-                  <input className={s.lbTitel} defaultValue={l.titel} onBlur={(e) => void onUpdate(l.id, { titel: e.target.value.trim() || l.titel })} />
-                ) : (
-                  l.titel
-                )}
-              </td>
-              <td>
-                {istEigen ? (
-                  <input className={s.lbSmall} inputMode="decimal" defaultValue={String(l.gewicht)}
-                    onBlur={(e) => { const g = Number(e.target.value.replace(',', '.')); if (Number.isFinite(g) && g > 0) void onUpdate(l.id, { gewicht: g }) }} />
-                ) : (
-                  l.gewicht
-                )}
-              </td>
-              <td>
-                {istEigen ? (
-                  <input className={s.lbSmall} inputMode="decimal" defaultValue={String(l.wert)}
-                    onBlur={(e) => { const w = parseNote(e.target.value); if (w != null) void onUpdate(l.id, { wert: w }) }} />
-                ) : (
-                  l.wert.toFixed(1)
-                )}
-              </td>
-              {istEigen && (
-                <td>
-                  <button className={s.lbDel} onClick={() => void onDelete(l.id)} aria-label="Löschen">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </button>
-                </td>
-              )}
-            </tr>
-          ))}
-          {lbs.length === 0 && (
-            <tr>
-              <td colSpan={istEigen ? 4 : 3} className="muted" style={{ padding: 'var(--sp-3) var(--sp-2)' }}>
-                Noch keine Leistungsbeurteilungen erfasst.
-              </td>
-            </tr>
-          )}
-          {istEigen && (
-            <tr>
-              <td><input className={s.lbTitel} placeholder="z.B. Prüfung 1 / VA" value={titel} onChange={(e) => setTitel(e.target.value)} /></td>
-              <td><input className={s.lbSmall} inputMode="decimal" value={gewicht} onChange={(e) => setGewicht(e.target.value)} placeholder="%" /></td>
-              <td><input className={s.lbSmall} inputMode="decimal" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note" /></td>
-              <td>
-                <Button size="sm" variant="secondary" onClick={hinzufuegen}>+</Button>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      <div className={s.lbFoot}>
-        <span className={`${s.lbSumme} ${!vollstaendig ? s.lbSummeFehler : ''}`}>Summe Gewichte: {summe}%</span>
-        <span className={s.lbModulnote}>Modulnote:<b>{fmt(modn)}</b></span>
-      </div>
-      {lbs.length > 0 && !vollstaendig && (
-        <div className={s.lbWarn}>
-          Die Gewichte ergeben {summe}% statt 100 % – das Modul gilt als begonnen, aber nicht
-          abgeschlossen.
-        </div>
-      )}
-    </Modal>
   )
 }

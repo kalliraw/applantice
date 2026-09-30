@@ -87,24 +87,25 @@ begin;
 // ---------- Notenkomponenten (EFZ-Formel = Daten aus BiVo, featurematrix.md) ----------
 w(`
 -- Notenkomponenten: EFZ-Formel IPA 40 / Informatikkompetenzen 30 (BFS 80 + ÜK 20)
--- / ABU 20 / EGK 10. Sport ist nicht qualifikationsrelevant (Gewicht 0).
--- BM-Komponenten sind PLATZHALTER (Gewicht 0): Gewichte sind schulspezifisch und
--- müssen vor Nutzung des BM-Rechners erfasst werden (offener Punkt, featurematrix.md).
-insert into public.notenkomponente (code, name, kontext, parent_id, gewicht, ist_qualifikationsrelevant, entfaellt_bei_bm, sortierung) values
-  ('IPA', 'Individuelle praktische Arbeit (IPA)', 'EFZ', null, 0.40, true, false, 1),
-  ('INFORMATIK', 'Informatikkompetenzen', 'EFZ', null, 0.30, true, false, 2),
-  ('ABU', 'Allgemeinbildung (ABU)', 'EFZ', null, 0.20, true, true, 3),
-  ('EGK', 'Erweiterte Grundkompetenzen', 'EFZ', null, 0.10, true, true, 4),
-  ('SPORT', 'Sport (nicht qualifikationsrelevant)', 'EFZ', null, 0, false, true, 5),
-  ('BM_FACHNOTE', 'BM-Fachnoten (Gewichte schulspezifisch – zu erfassen)', 'BM', null, 0, true, false, 10),
-  ('BM_IDPA', 'BM Interdisziplinäre Projektarbeit (IDPA)', 'BM', null, 0, true, false, 11);
+-- / ABU 20 / EGK 10 (BiVo 2021 Art. 19). Sport ist nicht qualifikationsrelevant.
+-- Rundung/Fallnoten nach Art. 19: Modul- und ÜK-Schnitt auf halbe, IK/IPA auf Zehntel,
+-- Fallnoten IPA >= 4 und IK >= 4 (Gesamtnote-Regel: Tabelle notenregel, Migration 120009).
+-- BM: jede Fachnote zählt gleich (fach.gewicht); Regeln in notenregel (BMV 2009).
+insert into public.notenkomponente (code, name, kontext, parent_id, gewicht, ist_qualifikationsrelevant, entfaellt_bei_bm, sortierung, rundung_einzelnote, rundung, mindestnote, promotionsrelevant) values
+  ('IPA', 'Individuelle praktische Arbeit (IPA)', 'EFZ', null, 0.40, true, false, 1, null, 'zehntel', 4.0, true),
+  ('INFORMATIK', 'Informatikkompetenzen', 'EFZ', null, 0.30, true, false, 2, null, 'zehntel', 4.0, true),
+  ('ABU', 'Allgemeinbildung (ABU)', 'EFZ', null, 0.20, true, true, 3, null, 'zehntel', null, true),
+  ('EGK', 'Erweiterte Grundkompetenzen', 'EFZ', null, 0.10, true, true, 4, 'halbe', 'halbe', null, true),
+  ('SPORT', 'Sport (nicht qualifikationsrelevant)', 'EFZ', null, 0, false, true, 5, null, null, null, true),
+  ('BM_FACHNOTE', 'BM-Fachnoten', 'BM', null, 0, true, false, 10, null, null, null, true),
+  ('BM_IDPA', 'BM Interdisziplinäres Arbeiten (IDAF + IDPA)', 'BM', null, 0, true, false, 11, null, null, null, false);
 
 -- Unterkomponenten von INFORMATIK (BFS 80% + ÜK 20%), referenzieren den Parent per code.
-insert into public.notenkomponente (code, name, kontext, parent_id, gewicht, ist_qualifikationsrelevant, entfaellt_bei_bm, sortierung) values
+insert into public.notenkomponente (code, name, kontext, parent_id, gewicht, ist_qualifikationsrelevant, entfaellt_bei_bm, sortierung, rundung_einzelnote, rundung) values
   ('INFORMATIK_BFS', 'Informatikkompetenzen Berufsfachschule', 'EFZ',
-     (select id from public.notenkomponente where code = 'INFORMATIK'), 0.80, true, false, 1),
+     (select id from public.notenkomponente where code = 'INFORMATIK'), 0.80, true, false, 1, 'halbe', 'halbe'),
   ('INFORMATIK_UEK', 'Informatikkompetenzen überbetriebliche Kurse', 'EFZ',
-     (select id from public.notenkomponente where code = 'INFORMATIK'), 0.20, true, false, 2);
+     (select id from public.notenkomponente where code = 'INFORMATIK'), 0.20, true, false, 2, 'halbe', 'halbe');
 `)
 
 // Mapping der faecher.csv-Notenkomponente auf Komponenten-Codes.
@@ -172,14 +173,14 @@ w(
 
 // ---------- Fächer ----------
 w(`\n-- Fächer (Startdaten aus data/faecher.csv; Berufsbildner pflegt in der App)`)
-w(`insert into public.fach (name, modul_nr, kontext, typ, notenkomponente_id, gewicht, aktiv, bemerkung, sortierung) values`)
+w(`insert into public.fach (name, modul_nr, kontext, typ, notenkomponente_id, gewicht, aktiv, bemerkung, sortierung, hat_abschlusspruefung) values`)
 w(
   faecher
     .map((f, i) => {
       const code = komponenteMap[f.notenkomponente]
       if (!code) throw new Error(`Unbekannte Notenkomponente in faecher.csv: ${f.notenkomponente}`)
       const nk = `(select id from public.notenkomponente where code = ${q(code)})`
-      return `  (${q(f.fach_name)}, ${q(f.modul_nr)}, ${q(f.kontext)}, ${q(f.typ)}, ${nk}, 1, ${bool(f.aktiv)}, ${q(f.bemerkung)}, ${i + 1})`
+      return `  (${q(f.fach_name)}, ${q(f.modul_nr)}, ${q(f.kontext)}, ${q(f.typ)}, ${nk}, 1, ${bool(f.aktiv)}, ${q(f.bemerkung)}, ${i + 1}, ${bool(f.bm_abschlusspruefung || 'nein')})`
     })
     .join(',\n') + ';',
 )

@@ -492,3 +492,170 @@
 .dispBadge {
   margin-left: auto;
 }
+
+/* ---- Simulation / Zielnote / Bestehen (Notenrechner 2) ---- */
+.simBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px dashed var(--fehler-rand);
+  border-radius: var(--r-md);
+  background: var(--gelb-soft);
+  font-size: 0.86rem;
+  color: var(--text-2);
+}
+.simZeile td {
+  color: var(--text-2);
+  font-style: italic;
+}
+.simWert {
+  color: var(--fehler-fg);
+}
+.simInput {
+  border-style: dashed;
+}
+.gesamtOhneSim {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.exakt {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+.pfeil {
+  margin: 0 6px;
+  color: var(--text-3);
+}
+.lbAktionen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.zielBox {
+  margin-top: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+}
+.zielTitel {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 650;
+  color: var(--mint-900);
+  margin-bottom: var(--sp-2);
+}
+.zielZeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-2);
+}
+.zielZeile label,
+.zielInline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.84rem;
+  color: var(--text-2);
+}
+.zielErgebnis {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.zielErgebnis b {
+  font-family: var(--font-mono);
+  color: var(--mint-900);
+}
+.zielUnerreichbar,
+.zielUnerreichbar b {
+  color: var(--fehler-fg);
+}
+.zielHinweis {
+  margin-top: var(--sp-2);
+  font-size: 0.76rem;
+  color: var(--text-3);
+}
+
+.normListe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+.norm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.norm:last-child {
+  border-bottom: none;
+}
+.normLabel {
+  color: var(--text);
+  min-width: 0;
+}
+.normWert {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+.normRegel {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.karteGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--sp-4);
+}
+.bmTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.bmTable th {
+  text-align: left;
+  padding: var(--sp-2);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.bmTable td {
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.bmTable .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.bmFachLink {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 550;
+  color: var(--accent-bright);
+  text-align: left;
+  cursor: pointer;
+}
+.bmFachLink:hover {
+  text-decoration: underline;
+}
