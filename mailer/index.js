@@ -194,10 +194,10 @@ function verifyJwt(token) {
     return null
   }
 }
-async function istBerufsbildner(authUserId) {
+async function istVerwaltung(authUserId) {
   if (!authUserId) return false
   const r = await pool.query(
-    `select 1 from public.benutzer where auth_user_id = $1 and rolle = 'berufsbildner' and aktiv limit 1`,
+    `select 1 from public.benutzer where auth_user_id = $1 and rolle in ('berufsbildner', 'admin') and aktiv limit 1`,
     [authUserId],
   )
   return r.rowCount > 0
@@ -330,9 +330,21 @@ async function reminderSemesterbericht() {
       group by b.id, b.name`,
   )
   if (!rows.length) return
-  const bb = await pool.query(`select email, name from benutzer where aktiv and rolle = 'berufsbildner' and email is not null`)
-  const empfaenger = bb.rows
+  // Empfänger pro Lernendem: alle Admins + die laufend betreuenden Berufsbildner
+  // (roles.md: BB sehen nur ihre zugewiesenen Lernenden).
   for (const r of rows) {
+    const { rows: empfaenger } = await pool.query(
+      `select distinct u.email, u.name
+         from benutzer u
+        where u.aktiv and u.email is not null
+          and (u.rolle = 'admin'
+               or (u.rolle = 'berufsbildner' and exists (
+                     select 1 from betreuung bt
+                      where bt.berufsbildner_id = u.id and bt.lernende_id = $1
+                        and bt.von_datum <= current_date
+                        and (bt.bis_datum is null or bt.bis_datum > current_date))))`,
+      [r.benutzer_id],
+    )
     for (const e of empfaenger) {
       if (await bereitsGesendet('semesterbericht_faellig', e.email, r.benutzer_id, MAIL_RESEND_TAGE)) continue
       await sendTemplate({
@@ -416,7 +428,7 @@ const server = http.createServer(async (req, res) => {
       const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
       const payload = token && verifyJwt(token)
       if (!payload) return json(res, 401, { error: 'Ungültiges Token' })
-      if (!(await istBerufsbildner(payload.sub))) return json(res, 403, { error: 'Nur Berufsbildner' })
+      if (!(await istVerwaltung(payload.sub))) return json(res, 403, { error: 'Nur Berufsbildner/Admin' })
 
       const body = JSON.parse((await leseBody(req)) || '{}')
 

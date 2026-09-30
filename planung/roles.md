@@ -101,8 +101,11 @@ Lernenden:
   sondern mit `bis_datum` abgeschlossen – im Einklang mit der Leitplanke "Verlaufsdaten
   nie überschreiben". Ein Berufsbildner sieht die Fachdaten eines Lernenden, sobald eine
   Betreuung begonnen hat (auch abgeschlossene bleiben sichtbar – z.B. für früher
-  verfasste Berichte).
-- Verwaltet wird die Zuweisung von **Admin und Berufsbildner** (Einstellungen > Betreuung).
+  verfasste Berichte). **Schreiben** (Bildungsberichte anlegen/bearbeiten) nur, solange die
+  Betreuung läuft.
+- Verwaltet wird die Zuweisung ausschliesslich vom **Admin** (Einstellungen > Betreuung) –
+  sonst könnte sich ein Berufsbildner selbst Lernende zuweisen. Ebenso vergibt nur ein
+  Admin die Rolle `admin` und ändert Admin-Konten (DB-Trigger, nicht nur Frontend).
 
 ## Was für alle Rollen gleich gilt
 

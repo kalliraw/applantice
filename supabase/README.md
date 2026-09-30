@@ -33,6 +33,8 @@ docker compose exec -T db psql -U supabase_admin -d postgres \
   < supabase/migrations/20260720120001_auth_autoprovision.sql
 docker compose exec -T db psql -U supabase_admin -d postgres \
   < supabase/migrations/20260720120002_benutzer_delete.sql
+# … und so weiter für alle neueren Dateien in Reihenfolge, zuletzt z.B.:
+docker compose exec -T db psql -U supabase_admin -d postgres   < supabase/migrations/20260720120008_admin_schutz.sql
 # Danach PostgREST das Schema neu laden lassen (sonst greift die Policy evtl. verzögert):
 docker compose exec -T db psql -U supabase_admin -d postgres -c "notify pgrst, 'reload schema';"
 ```
