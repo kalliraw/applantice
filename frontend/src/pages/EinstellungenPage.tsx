@@ -186,14 +186,25 @@ export function EinstellungenPage() {
     }
     const vorherRolle = edit.id ? benutzer.find((b) => b.id === edit.id)?.rolle ?? null : null
     let benutzerId = edit.id
+    setAktionFehler(null)
     if (edit.id) {
-      await supabase.from('benutzer').update(payload).eq('id', edit.id)
+      const { error } = await supabase.from('benutzer').update(payload).eq('id', edit.id)
+      if (error) {
+        setSpeichert(false)
+        setAktionFehler(`Speichern fehlgeschlagen: ${error.message}`)
+        return
+      }
     } else {
-      const { data: ins } = await supabase
+      const { data: ins, error } = await supabase
         .from('benutzer')
         .insert({ ...payload, email: edit.email.trim(), auth_typ: 'entra_id' })
         .select('id')
         .single()
+      if (error) {
+        setSpeichert(false)
+        setAktionFehler(`Speichern fehlgeschlagen: ${error.message}`)
+        return
+      }
       benutzerId = (ins as { id: string } | null)?.id ?? null
     }
     // Zugangs-Mail nur bei NEU vergebener Rolle (vorher keine bzw. neuer Benutzer mit Rolle).
@@ -239,6 +250,10 @@ export function EinstellungenPage() {
   if (ladt) return <div style={{ display: 'grid', placeItems: 'center', padding: 40 }}><Spinner /></div>
 
   const eigenesKonto = edit?.id != null && edit.id === profil?.id
+  // Admin-Konten und die Admin-Rolle verwaltet nur ein Admin (RLS-Trigger, migration 120008).
+  const fremdesAdminKonto =
+    !istAdmin && edit?.id != null && benutzer.find((b) => b.id === edit.id)?.rolle === 'admin'
+  const rolleGesperrt = eigenesKonto || fremdesAdminKonto
 
   return (
     <div>
@@ -456,7 +471,7 @@ export function EinstellungenPage() {
           title={edit.id ? 'Benutzer bearbeiten' : 'Neuer Benutzer'}
           footer={
             <>
-              {edit.id && !eigenesKonto && (
+              {edit.id && !rolleGesperrt && (
                 <Button variant="danger" loading={loescht} onClick={() => void loeschen()} style={{ marginRight: 'auto' }}>
                   Löschen
                 </Button>
@@ -483,10 +498,13 @@ export function EinstellungenPage() {
             label="Rolle"
             value={edit.rolle}
             onChange={(e) => setEdit({ ...edit, rolle: e.target.value as '' | Rolle })}
-            disabled={eigenesKonto}
+            disabled={rolleGesperrt}
             options={[
               { value: '', label: 'ohne Rolle (kein Zugriff)' },
-              ...ROLLE_OPTIONEN.map((o) => ({ value: o.value, label: o.label })),
+              ...ROLLE_OPTIONEN.filter((o) => istAdmin || o.value !== 'admin' || edit.rolle === 'admin').map((o) => ({
+                value: o.value,
+                label: o.label,
+              })),
             ]}
           />
 
@@ -510,7 +528,7 @@ export function EinstellungenPage() {
             <input
               type="checkbox"
               checked={edit.aktiv}
-              disabled={eigenesKonto}
+              disabled={rolleGesperrt}
               onChange={(e) => setEdit({ ...edit, aktiv: e.target.checked })}
             />
             Konto aktiv {edit.id && '(Lehrabschluss/Austritt → inaktiv statt löschen)'}
@@ -518,6 +536,9 @@ export function EinstellungenPage() {
 
           {eigenesKonto && (
             <p className={s.hintEigen}>Eigenes Konto: Rolle und Status sind hier gesperrt (Selbst-Aussperren verhindern).</p>
+          )}
+          {fremdesAdminKonto && (
+            <p className={s.hintEigen}>Admin-Konto: Rolle, Status und Löschen kann nur ein Admin ändern.</p>
           )}
           {aktionFehler && <p className={s.warn}>{aktionFehler}</p>}
         </Modal>
